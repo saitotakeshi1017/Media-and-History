@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loops &amp; Functions — Practice Quiz</title>
+<style>
+  :root{
+    --bg:#0e1320; --panel:#161c2c; --card:#1b2233; --card2:#212a3e;
+    --ink:#e8edf6; --muted:#93a0bb; --line:#2c3650;
+    --code-bg:#11192b; --code-ink:#cdd6e6;
+    --kw:#ff79c6; --fn:#8be9fd; --str:#9ece6a; --num:#ff9e64; --com:#6b7da3;
+    --accent:#ffb454; --ok:#3ddc84; --okbg:#163a2a; --no:#ff6b6b; --nobg:#3a1a1f;
+    --badge:#2563ff;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:1680px;margin:0 auto;padding:22px 18px 60px;}
+  header.top{display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px 26px;
+    border-bottom:2px solid var(--line);padding-bottom:14px;margin-bottom:6px;}
+  .title{font-size:26px;font-weight:800;letter-spacing:.3px;}
+  .title small{display:block;font-size:12.5px;font-weight:500;color:var(--muted);
+    letter-spacing:.2px;margin-top:3px;}
+  .legend{font-family:Consolas,"Courier New",monospace;font-size:11.5px;color:var(--muted);}
+  .legend b{color:var(--accent);}
+
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:16px 0 10px;}
+  .tabs{display:flex;gap:6px;background:var(--panel);padding:5px;border-radius:11px;border:1px solid var(--line);}
+  .tab{border:0;background:transparent;color:var(--muted);font-weight:700;font-size:13px;
+    padding:8px 16px;border-radius:8px;cursor:pointer;transition:.15s;}
+  .tab.active{background:var(--badge);color:#fff;box-shadow:0 2px 10px rgba(37,99,255,.35);}
+  .tab:hover:not(.active){color:var(--ink);}
+  .btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);
+    font-weight:600;font-size:12.5px;padding:8px 14px;border-radius:9px;cursor:pointer;transition:.15s;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .score{margin-left:auto;font-family:Consolas,monospace;font-size:13px;color:var(--muted);
+    background:var(--panel);border:1px solid var(--line);padding:8px 14px;border-radius:9px;}
+  .score b{color:var(--ok);}
+
+  .page-head{font-size:15px;font-weight:700;color:var(--accent);margin:14px 2px 12px;
+    letter-spacing:.3px;display:flex;align-items:center;gap:10px;}
+  .page-head:before{content:"";width:34px;height:3px;background:var(--accent);border-radius:2px;}
+
+  .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;}
+  .page{display:none;}
+  .page.active{display:block;}
+
+  .q{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:10px 10px 11px;display:flex;flex-direction:column;min-height:300px;
+    position:relative;overflow:hidden;}
+  .q .num{position:absolute;top:0;right:0;background:var(--badge);color:#fff;
+    font-family:Consolas,monospace;font-size:11px;font-weight:700;
+    padding:2px 8px;border-bottom-left-radius:9px;}
+  .q .tag{font-family:Consolas,monospace;font-size:9.5px;color:var(--com);
+    text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;padding-right:34px;}
+  .q .stem{font-size:11.5px;line-height:1.32;font-weight:600;margin-bottom:7px;}
+  pre.code{background:var(--code-bg);border:1px solid var(--line);border-radius:7px;
+    margin:0 0 7px;padding:6px 7px;font-family:Consolas,"Courier New",monospace;
+    font-size:9.7px;line-height:1.4;color:var(--code-ink);white-space:pre;
+    overflow:auto;max-height:118px;}
+  pre.code::-webkit-scrollbar{height:6px;width:6px;}
+  pre.code::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px;}
+  .kw{color:var(--kw);} .fn{color:var(--fn);} .str{color:var(--str);}
+  .num2{color:var(--num);} .com{color:var(--com);font-style:italic;}
+  .choices{display:flex;flex-direction:column;gap:4px;margin-top:auto;}
+  .choice{display:flex;gap:6px;align-items:flex-start;text-align:left;width:100%;
+    background:var(--card2);border:1px solid var(--line);border-radius:7px;
+    padding:5px 7px;font-size:10.6px;line-height:1.25;color:var(--ink);
+    cursor:pointer;transition:.12s;font-family:inherit;}
+  .choice:hover{border-color:var(--accent);}
+  .choice .k{font-family:Consolas,monospace;font-weight:700;color:var(--muted);flex:0 0 auto;}
+  .choice.correct{background:var(--okbg);border-color:var(--ok);color:#d6ffe7;}
+  .choice.correct .k{color:var(--ok);}
+  .choice.wrong{background:var(--nobg);border-color:var(--no);color:#ffd9d9;}
+  .choice.wrong .k{color:var(--no);}
+  .choice.lock{cursor:default;}
+  .footer{margin-top:26px;text-align:center;color:var(--com);font-size:11px;
+    font-family:Consolas,monospace;border-top:1px solid var(--line);padding-top:14px;}
+
+  @media(max-width:1400px){.grid{grid-template-columns:repeat(4,1fr);}}
+  @media(max-width:1000px){.grid{grid-template-columns:repeat(3,1fr);}}
+  @media(max-width:720px){.grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:480px){.grid{grid-template-columns:1fr;} .score{margin-left:0;width:100%;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="title">Loops &amp; Functions — Practice Quiz
+      <small>Information Systems Programming · Lectures 07 &amp; 08 · self-review set (60 questions)</small>
+    </div>
+    <div class="legend">tap a choice to check &nbsp;·&nbsp; <b>green</b> = correct &nbsp;·&nbsp; <b>red</b> = your pick was wrong</div>
+  </header>
+
+  <div class="controls">
+    <div class="tabs">
+      <button class="tab active" data-page="0">Page 1 · Loops &amp; Exceptions</button>
+      <button class="tab" data-page="1">Page 2 · Functions &amp; Recursion</button>
+    </div>
+    <button class="btn" id="revealBtn">Reveal all answers</button>
+    <button class="btn" id="resetBtn">Reset page</button>
+    <div class="score">Correct on this page: <b id="scoreVal">0</b> / <span id="scoreTot">30</span></div>
+  </div>
+
+  <div class="page active" id="page0">
+    <div class="page-head">Page 1 — Lecture 07 · while loops, break / continue / else, exception handling, for &amp; range</div>
+    <div class="grid" id="grid0"></div>
+  </div>
+  <div class="page" id="page1">
+    <div class="page-head">Page 2 — Lecture 08 · functions, parameters, Pythonic style, default arguments, lambda, recursion</div>
+    <div class="grid" id="grid1"></div>
+  </div>
+
+  <div class="footer">Practice set for in-class quiz revision · all code &amp; outputs derived from the lecture slides</div>
+</div>
+
+<script>
+/* ---- syntax highlighter (lightweight, for display only) ---- */
+function hl(src){
+  const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return esc(src).split("\n").map(line=>{
+    // comments first
+    let m = line.match(/^(.*?)(#.*)$/);
+    let pre = m ? m[1] : line;
+    let com = m ? m[2] : "";
+    pre = pre
+      .replace(/("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/g,'<span class="str">$1</span>')
+      .replace(/\b(def|return|while|for|in|if|elif|else|try|except|finally|break|continue|lambda|and|or|not|True|False|None)\b/g,'<span class="kw">$1</span>')
+      .replace(/\b(print|input|int|str|range|type|upper|len)\b/g,'<span class="fn">$1</span>')
+      .replace(/\b(\d+\.?\d*)\b/g,'<span class="num2">$1</span>');
+    if(com) com = '<span class="com">'+com+'</span>';
+    return pre+com;
+  }).join("\n");
+}
+
+/* ---- question bank ----
+   each: {tag, code(optional), stem, choices:[..], answer:index} */
+const PAGES = [
+/* ===================== PAGE 1 : LECTURE 07 ===================== */
+[
+ {tag:"while · 07_01", code:`count = 1
+while (count < 6):
+    print(count)
+    count = count + 1`,
+  stem:"What is the console output?",
+  choices:["1 2 3 4 5","1 2 3 4 5 6","0 1 2 3 4 5","2 3 4 5 6"], answer:0},
+
+ {tag:"while · 07_02", code:`count = 1
+while (count < 6):
+    count = count + 1
+    print(count)`,
+  stem:"What is printed? (increment happens before print)",
+  choices:["1 2 3 4 5","2 3 4 5 6","2 3 4 5","1 2 3 4 5 6"], answer:1},
+
+ {tag:"while · 07_03", code:`count = 0
+while (count < 5):
+    count = count + 1
+    print(count)`,
+  stem:"What is the output?",
+  choices:["0 1 2 3 4","1 2 3 4","1 2 3 4 5","0 1 2 3 4 5"], answer:2},
+
+ {tag:"break · 07_04", code:`count = 0
+while (count < 6):
+    count = count + 1
+    if (count == 4):
+        print("Bye")
+        break
+    print(count)`,
+  stem:"What does it print?",
+  choices:["1 2 3 Bye","1 2 3 4 Bye","1 2 3 Bye 5","Bye"], answer:0},
+
+ {tag:"continue · 07_05", code:`count = 0
+while (count < 6):
+    count = count + 1
+    if (count == 4):
+        print("Skip")
+        continue
+    print(count)`,
+  stem:"What does it print?",
+  choices:["1 2 3 Skip","1 2 3 Skip 4 5 6","1 2 3 Skip 5 6","1 2 3 5 6"], answer:2},
+
+ {tag:"while-else · 07_06", code:`count = 0
+while (count < 6):
+    count = count + 1
+    print(count)
+else:
+    print("Out")`,
+  stem:"What is the output?",
+  choices:["1 2 3 4 5 6","1 2 3 4 5 6 Out","Out","1 2 3 4 5 Out"], answer:1},
+
+ {tag:"concept · break", stem:"What does the break statement do inside a while loop?",
+  choices:["Stops the loop even if the while condition is still true",
+           "Skips the rest of the current iteration only",
+           "Restarts the loop from the beginning",
+           "Runs a block when the condition becomes false"], answer:0},
+
+ {tag:"concept · continue", stem:"What does the continue statement do?",
+  choices:["Ends the whole loop immediately",
+           "Stops the current iteration and continues with the next",
+           "Pauses the program until input",
+           "Resets all loop variables"], answer:1},
+
+ {tag:"concept · while-else", stem:"When does the else block of a while loop run?",
+  choices:["Every iteration","Only if break is called",
+           "When the loop condition becomes false (and no break occurred)",
+           "Never, it is a syntax error"], answer:2},
+
+ {tag:"concept · try", stem:"What is the purpose of the try block?",
+  choices:["Handle the errors","Test a block of code for errors",
+           "Run code only when no errors occur","Run code regardless of the result"], answer:1},
+
+ {tag:"concept · except", stem:"What is the purpose of the except block?",
+  choices:["Test code for errors","Handle the errors that occur",
+           "Always run at the end","Define default values"], answer:1},
+
+ {tag:"concept · finally", stem:"What does the finally block do?",
+  choices:["Runs only if an error occurred","Runs only if no error occurred",
+           "Executes code regardless of the result","Catches a specific error type"], answer:2},
+
+ {tag:"concept · try-else", stem:"In try/except/else, when does the else block run?",
+  choices:["When an error is raised","When no errors occur in the try block",
+           "Always, after finally","Only on a ValueError"], answer:1},
+
+ {tag:"try/except · 07_07", code:`myNumber = int(10)
+try:
+    print("The number is " + myNumber)
+except:
+    print("Something went wrong")`,
+  stem:"What is the output?",
+  choices:["The number is 10","Something went wrong","10","Nothing — it crashes"], answer:1},
+
+ {tag:"try/except · 07_08", code:`try:
+    myNumber = int(input("Enter a Number: "))
+    print("The number is " + myNumber)
+except TypeError:
+    print("Oops.. TypeError occurs!")
+except:
+    print("Something went wrong")`,
+  stem:"User types 33. What prints?",
+  choices:["The number is 33","Oops.. TypeError occurs!","Something went wrong","33"], answer:1},
+
+ {tag:"try/except · 07_08", code:`try:
+    myNumber = int(input("Enter a Number: "))
+    print("The number is " + myNumber)
+except TypeError:
+    print("Oops.. TypeError occurs!")
+except:
+    print("Something went wrong")`,
+  stem:"User types ee. What prints? (int('ee') raises ValueError)",
+  choices:["Oops.. TypeError occurs!","Something went wrong","The number is ee","Nothing"], answer:1},
+
+ {tag:"try/except/else · 07_09", code:`try:
+    myNumber = int(input("Enter a Number: "))
+    print("The number is " + str(myNumber))
+except:
+    print("Something went wrong")
+else:
+    print("Done and dusted")`,
+  stem:"User types 33. What is the output?",
+  choices:["The number is 33","The number is 33 / Done and dusted",
+           "Something went wrong / Done and dusted","Done and dusted"], answer:1},
+
+ {tag:"try/finally · 07_10", code:`try:
+    myNumber = int(input("Enter a Number: "))
+    print("The number is " + str(myNumber))
+except:
+    print("Something went wrong")
+finally:
+    print("Done and dusted")`,
+  stem:"User types 57. What is the output?",
+  choices:["The number is 57","The number is 57 / Done and dusted",
+           "Something went wrong / Done and dusted","Done and dusted"], answer:1},
+
+ {tag:"try/finally · 07_10", code:`try:
+    myNumber = int(input("Enter a Number: "))
+    print("The number is " + str(myNumber))
+except:
+    print("Something went wrong")
+finally:
+    print("Done and dusted")`,
+  stem:"User types apu. What is the output?",
+  choices:["The number is apu","Something went wrong",
+           "Something went wrong / Done and dusted","Done and dusted"], answer:2},
+
+ {tag:"errors · concept", code:`print("The number is " + 10)`,
+  stem:"Which error does this raise?",
+  choices:["ValueError","TypeError","IndexError","NameError"], answer:1},
+
+ {tag:"for/range · 07_18", code:`for x in range(0, 3):
+    print(x)`,
+  stem:"What is the output?",
+  choices:["0 1 2","0 1 2 3","1 2 3","0 1 2 3 4"], answer:0},
+
+ {tag:"for/range · 07_19", code:`for x in range(3):
+    print(x)`,
+  stem:"What is the output? (range with one argument)",
+  choices:["1 2 3","0 1 2 3","0 1 2","3"], answer:2},
+
+ {tag:"for/range · 07_20", code:`for x in range(2, 5):
+    print(x)`,
+  stem:"What is the output? (the stop value is excluded)",
+  choices:["2 3 4 5","2 3 4","3 4 5","2 3 4 5 6"], answer:1},
+
+ {tag:"for/range · 07_21", code:`for x in range(2, 27, 5):
+    print(x)`,
+  stem:"What is the output? (start, stop, step)",
+  choices:["2 7 12 17 22 27","2 7 12 17 22","5 10 15 20 25","2 5 10 15 20"], answer:1},
+
+ {tag:"for/string · 07_22", code:`for x in "APU":
+    print(x)`,
+  stem:"What is the output?",
+  choices:["APU","A P U","0 1 2","A, P, U"], answer:1},
+
+ {tag:"for/range · 07_27", code:`for x in range(5, 0, -1):
+    print(x)`,
+  stem:"What is the output? (counting backwards)",
+  choices:["5 4 3 2 1 0","5 4 3 2 1","1 2 3 4 5","0 1 2 3 4 5"], answer:1},
+
+ {tag:"for/range · 07_27", code:`for x in range(5, 0, -2):
+    print(x)`,
+  stem:"What is the output? (negative step of 2)",
+  choices:["5 3 1","5 4 3 2 1","5 3 1 -1","4 2 0"], answer:0},
+
+ {tag:"for/list · 07_24", code:`myList = ["A", 10, True, "K", 17.5, ["V", 7]]
+for x in myList:
+    print(x)`,
+  stem:"How many lines are printed?",
+  choices:["5","6","7","8"], answer:1},
+
+ {tag:"nested for · 07_32", code:`city = ["Fukuoka", "Oita", "Nagasaki", "Saga"]
+location = ["R", "B", "G"]
+for data1 in city:
+    for data2 in location:
+        print(data1 + " " + data2)
+    print("*" * 15)`,
+  stem:"How many times is the line of stars (*****) printed?",
+  choices:["3","4","12","1"], answer:1},
+
+ {tag:"concept · infinite loop", stem:"A while True loop with no break is best described as a/an:",
+  choices:["Conditional statement","Infinite (endless / dead) loop",
+           "Recursive function","For loop"], answer:1},
+],
+
+/* ===================== PAGE 2 : LECTURE 08 ===================== */
+[
+ {tag:"concept · function", stem:"What is a function?",
+  choices:["A loop that never ends","A group of linked statements that perform a certain task",
+           "A type of variable","A single line of code"], answer:1},
+
+ {tag:"concept · built-in", stem:"What are built-in functions?",
+  choices:["Functions written by the user for special needs",
+           "Functions that come with the Python package (common)",
+           "Functions that only run once","Functions that cannot take parameters"], answer:1},
+
+ {tag:"concept · user-defined", stem:"What are user-defined functions?",
+  choices:["Functions that come with Python","Functions written for the requirement of its activities",
+           "Functions that print automatically","Errors in the code"], answer:1},
+
+ {tag:"syntax · def", code:`____ function_Name(parameters):
+    statements
+    return expression`,
+  stem:"Which keyword begins a function definition?",
+  choices:["func","define","def","function"], answer:2},
+
+ {tag:"syntax · return", stem:"What does the return statement do in a function?",
+  choices:["Ends the program","Sends a value/expression back to the caller",
+           "Prints to the console","Loops the function"], answer:1},
+
+ {tag:"function · 08_01", code:`def addNum():
+    num1 = int(input("first number : "))
+    num2 = int(input("second number: "))
+    print(f"{num1} + {num2} = {num1 + num2}")
+
+addNum()`,
+  stem:"Inputs are 78 and 102. What prints?",
+  choices:["78 + 102 = 170","78 + 102 = 180","180","num1 + num2 = 180"], answer:1},
+
+ {tag:"function · 08_02", code:`def addNum(val1, val2):
+    return(val1 + val2)
+
+num1 = int(input("first : "))
+num2 = int(input("second: "))
+sum = addNum(num1, num2)
+print(f"{num1} + {num2} = {sum}")`,
+  stem:"Inputs are 33 and 55. What prints?",
+  choices:["33 + 55 = 88","33 + 55 = 89","88","val1 + val2 = 88"], answer:0},
+
+ {tag:"function · 08_04", code:`num1 = int(input("first : "))
+num2 = int(input("second: "))
+print(f"{num1} + {num2} = {addNum(num1, num2)}")
+
+def addNum(val1, val2):
+    return(val1 + val2)`,
+  stem:"What happens when this runs?",
+  choices:["It prints the sum correctly","NameError: name 'addNum' is not defined",
+           "TypeError","It prints 0"], answer:1},
+
+ {tag:"concept · order", stem:"Why does calling addNum before its definition fail?",
+  choices:["Functions can never be called","A function must be defined before it is called",
+           "input() blocks the call","Python has no functions"], answer:1},
+
+ {tag:"function · 08_03", code:`def addNum(val1, val2):
+    return(val1 + val2)
+
+num1 = int(input("first : "))
+num2 = int(input("second: "))
+print(f"{num1} + {num2} = {addNum(num1, num2)}")`,
+  stem:"Inputs are 66 and 144. What prints?",
+  choices:["66 + 144 = 200","66 + 144 = 210","210","66 + 144 = 110"], answer:1},
+
+ {tag:"concept · Pythonic", stem:"What does 'Pythonic code' mean?",
+  choices:["Code that runs the fastest only",
+           "Code using special Python tools, correct syntax, clean, readable, maintainable",
+           "Code with no functions","Code written in another language"], answer:1},
+
+ {tag:"concept · main()", code:`def main():
+    ...
+def addNum(val1, val2):
+    return(val1 + val2)
+
+main()`,
+  stem:"In the Pythonic pattern, what calls the program to start?",
+  choices:["addNum()","main()","def","return"], answer:1},
+
+ {tag:"default args · 08_07", code:`def greet(name, msg):
+    print(f"Yes, {name}, {msg}.")
+
+greet("Lanka", "Good Morning")`,
+  stem:"What is the output?",
+  choices:["Yes, Lanka, Good Morning.","Yes, Good Morning, Lanka.",
+           "Yes, name, msg.","Lanka Good Morning"], answer:0},
+
+ {tag:"default args · 08_08", code:`def greet(name = "user", msg = "welcome"):
+    print(f"Yes, {name}, {msg}.")
+
+greet("Rodrigo")   # first argument only`,
+  stem:"What is the output?",
+  choices:["Yes, Rodrigo, Rodrigo.","Yes, user, welcome.",
+           "Yes, Rodrigo, welcome.","Yes, welcome, Rodrigo."], answer:2},
+
+ {tag:"default args · 08_08", code:`def greet(name = "user", msg = "welcome"):
+    print(f"Yes, {name}, {msg}.")
+
+greet(msg = "Take care")   # second argument only`,
+  stem:"What is the output?",
+  choices:["Yes, user, Take care.","Yes, Take care, welcome.",
+           "Yes, Take care, user.","Yes, user, welcome."], answer:0},
+
+ {tag:"concept · lambda", stem:"What is a lambda function?",
+  choices:["A function with many lines","An anonymous function with only one expression",
+           "A built-in error type","A loop structure"], answer:1},
+
+ {tag:"lambda · 08_09", code:`mul = lambda x, z : x * z
+print(mul(3, 5))`,
+  stem:"What is printed?",
+  choices:["8","15","35","53"], answer:1},
+
+ {tag:"lambda · 08_09", code:`mul = lambda x, z : x * z
+print(mul(4, 8))`,
+  stem:"What is printed?",
+  choices:["12","48","32","84"], answer:2},
+
+ {tag:"lambda · 08_11", code:`sq = lambda x : x ** 2
+print(sq(5))`,
+  stem:"What is printed?",
+  choices:["10","25","52","32"], answer:1},
+
+ {tag:"lambda · 08_11", code:`sq = lambda x : x ** 2
+print(sq(9))`,
+  stem:"What is printed?",
+  choices:["18","99","81","729"], answer:2},
+
+ {tag:"lambda vs def · 08_13", code:`def cube1(y):
+    return y * y * y
+lambda_cube1 = lambda y : y * y * y
+
+print(cube1(5))
+print(lambda_cube1(5))`,
+  stem:"What is the output?",
+  choices:["125 then 15","125 then 125","15 then 15","555 then 125"], answer:1},
+
+ {tag:"lambda · 08_14", code:`check_odd_even = lambda x : 'even' if (x % 2 == 0) else 'odd'
+print(check_odd_even(22))`,
+  stem:"What is printed?",
+  choices:["odd","even","22","True"], answer:1},
+
+ {tag:"concept · recursion", stem:"What is a recursive function?",
+  choices:["A function that never returns","A function that calls itself until a condition is met",
+           "A function with no parameters","A built-in Python function"], answer:1},
+
+ {tag:"concept · recursion", stem:"A recursive function normally has which two steps?",
+  choices:["A loop step and a print step","A base step and a recursion step",
+           "An import step and a return step","A try step and an except step"], answer:1},
+
+ {tag:"recursion · 08_15", code:`def countdown(count):
+    if count <= 0:
+        print('Its finally done !')
+    else:
+        print(count, end=" -> ")
+        countdown(count - 1)
+
+countdown(5)`,
+  stem:"What is the output?",
+  choices:["5 -> 4 -> 3 -> 2 -> 1 -> Its finally done !",
+           "1 -> 2 -> 3 -> 4 -> 5 -> Its finally done !",
+           "5 4 3 2 1 0","Its finally done !"], answer:0},
+
+ {tag:"recursion · 08_16", code:`def factorial(num):
+    if num == 0:
+        return 1
+    else:
+        return num * factorial(num - 1)`,
+  stem:"What is the base case (stopping condition)?",
+  choices:["num == 1 returns 0","num == 0 returns 1",
+           "num < 0 returns num","num == 0 returns 0"], answer:1},
+
+ {tag:"recursion · 08_16", code:`def factorial(num):
+    if num == 0:
+        return 1
+    else:
+        return num * factorial(num - 1)
+
+print(factorial(5))`,
+  stem:"What is printed?",
+  choices:["25","120","60","720"], answer:1},
+
+ {tag:"recursion · 08_17", code:`def fibonacci(n):
+    if n <= 1:
+        return n
+    else:
+        return fibonacci(n-1) + fibonacci(n-2)
+
+print(fibonacci(5))`,
+  stem:"What is printed? (sequence 0,1,1,2,3,5,...)",
+  choices:["3","5","8","13"], answer:1},
+
+ {tag:"recursion · 08_17", code:`def fibonacci(n):
+    if n <= 1:
+        return n
+    else:
+        return fibonacci(n-1) + fibonacci(n-2)
+
+print(fibonacci(6))`,
+  stem:"What is printed?",
+  choices:["5","8","13","6"], answer:1},
+
+ {tag:"recursion · 08_18", code:`def test_recursion(value):
+    if(value > 0):
+        result = value + test_recursion(value - 1)
+        print(f" Result is {result}")
+    else:
+        result = 0
+    return result
+
+test_recursion(5)`,
+  stem:"What is the FINAL result value (5+4+3+2+1+0)?",
+  choices:["10","15","21","25"], answer:1},
+]
+];
+
+/* ---- render ---- */
+const grids = [document.getElementById('grid0'), document.getElementById('grid1')];
+const letters = ["A","B","C","D"];
+
+PAGES.forEach((qs, pageIdx)=>{
+  qs.forEach((q, i)=>{
+    const card = document.createElement('div');
+    card.className = 'q';
+    let html = `<div class="num">Q${i+1}</div><div class="tag">${q.tag}</div>`;
+    if(q.code){ html += `<pre class="code">${hl(q.code)}</pre>`; }
+    html += `<div class="stem">${q.stem}</div><div class="choices">`;
+    q.choices.forEach((c, ci)=>{
+      html += `<button class="choice" data-c="${ci}"><span class="k">${letters[ci]}</span><span>${c}</span></button>`;
+    });
+    html += `</div>`;
+    card.innerHTML = html;
+    card.dataset.answered = "0";
+    card.dataset.answer = q.answer;
+    card.dataset.page = pageIdx;
+    grids[pageIdx].appendChild(card);
+  });
+});
+
+/* ---- interaction ---- */
+function lockCard(card, revealOnly){
+  const ans = +card.dataset.answer;
+  const picks = card.querySelectorAll('.choice');
+  picks.forEach(b=>{
+    b.classList.add('lock');
+    const idx = +b.dataset.c;
+    if(idx === ans) b.classList.add('correct');
+  });
+}
+
+document.querySelectorAll('.choice').forEach(btn=>{
+  btn.addEventListener('click', e=>{
+    const card = btn.closest('.q');
+    if(card.dataset.answered === "1") return;
+    card.dataset.answered = "1";
+    const ans = +card.dataset.answer;
+    const pick = +btn.dataset.c;
+    if(pick === ans){ card.dataset.scored = "1"; }
+    else { btn.classList.add('wrong'); }
+    lockCard(card);
+    updateScore();
+  });
+});
+
+function currentPage(){ return document.querySelector('.tab.active').dataset.page; }
+
+function updateScore(){
+  const p = currentPage();
+  const cards = grids[p].querySelectorAll('.q');
+  let correct = 0;
+  cards.forEach(c=>{ if(c.dataset.scored === "1") correct++; });
+  document.getElementById('scoreVal').textContent = correct;
+  document.getElementById('scoreTot').textContent = cards.length;
+}
+
+/* tabs */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('page'+t.dataset.page).classList.add('active');
+    window.scrollTo({top:0, behavior:'smooth'});
+    updateScore();
+  });
+});
+
+/* reveal all */
+document.getElementById('revealBtn').addEventListener('click', ()=>{
+  const p = currentPage();
+  grids[p].querySelectorAll('.q').forEach(card=>{
+    if(card.dataset.answered !== "1"){
+      card.dataset.answered = "1";
+      lockCard(card, true);
+    }
+  });
+});
+
+/* reset */
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  const p = currentPage();
+  grids[p].querySelectorAll('.q').forEach(card=>{
+    card.dataset.answered = "0";
+    card.dataset.scored = "0";
+    card.querySelectorAll('.choice').forEach(b=>{
+      b.classList.remove('correct','wrong','lock');
+    });
+  });
+  updateScore();
+});
+
+updateScore();
+</script>
+</body>
+</html>
