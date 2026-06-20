@@ -1,0 +1,2688 @@
+<!--
+=====================================================================
+UNIVERSAL SLIDE-TO-MASTERY-QUIZ TEMPLATE
+=====================================================================
+
+WHAT THIS FILE IS
+-----------------
+This is a single-file HTML quiz engine plus a full generation prompt.
+Use it when the user uploads new lecture slides, PDFs, readings, notes,
+or screenshots and wants a browser-based quiz with the same design and
+behavior as the previous “mastery quiz” files.
+
+HOW TO USE THIS TEMPLATE WITH ANOTHER AI/GPT THREAD
+---------------------------------------------------
+Upload this file together with the new class materials and say:
+
+  “Read the instructions embedded in this HTML template. Read all uploaded
+   course materials carefully. Generate a finished one-file HTML quiz by
+   replacing only the metadata and the BANK array. Preserve the design,
+   layout, behavior, button logic, timer, history, locking, practice mode,
+   and browser protection exactly.”
+
+The AI should output ONE downloadable .html file that runs offline in a
+browser. No server. No external libraries. No CDN. No build step.
+
+CORE PROMISE
+------------
+The only thing that should change between quizzes is:
+  1. metadata/title/subtitle/footer
+  2. STORE_PREFIX
+  3. the BANK question array
+
+Everything else is the frozen machine: same cream/teal design, same timer,
+same attempt log, same answer locking, same incorrect-question practice.
+
+=====================================================================
+NON-NEGOTIABLE UI AND BEHAVIOR SPECIFICATION
+=====================================================================
+
+Opening page:
+  - Opening page appears before the quiz starts.
+  - Shows a 40-minute official quiz button.
+  - Shows a 50-minute retry practice button.
+  - Shows completed attempts count.
+  - Shows previous attempt log only if history exists in localStorage.
+  - After at least one attempt exists, show a second button next to
+    the official quiz button:
+      Practice only the incorrect questions again
+  - That practice button uses ONLY the latest attempt.
+  - If the latest attempt has no wrong marks, show exactly:
+      You've got no wrong mark!
+  - If browser cache/localStorage is empty, do not list previous attempts.
+
+Official quiz page:
+  - One question per page.
+  - Timer is at the upper-right, above the quiz title.
+  - Timer text is digits only, e.g. 14:56. Never write “Time”.
+  - Timer includes a small stopwatch graphic on the left.
+  - Stopwatch needle starts moving only when an attempt begins.
+  - Stopwatch needle completes exactly one full rotation in 40 minutes.
+  - Timer turns gradually red during the final 10 seconds.
+  - Do not show any old info bar such as round/score/best/completed.
+  - Question jump buttons are allowed and show completion state.
+  - Progress bar remains.
+
+Buttons on question pages:
+  - Previous button is arrow-only: ←
+  - Next button is arrow-only: →
+  - Submit button appears on official attempts.
+  - In practice mode, use Return to opening page instead of Submit.
+  - No reset-question button on official attempts or latest-wrong practice.
+  - The 50-minute retry practice page has a reload-icon reset button on
+    every question.
+  - Never show the phrase “records this attempt”.
+  - Show answer button exists for MCQ, fill, sequence, and inside matching.
+  - For dropdown matching, place Show answer next to Check answers.
+  - After a question is answered/checked/marked, Show answer becomes disabled.
+
+50-minute retry practice page:
+  - Uses the same BANK questions as the official quiz.
+  - Uses a 50-minute timer and stopwatch rotation.
+  - Question order is not shuffled.
+  - MCQ choices may still shuffle.
+  - Every question has a reload-icon reset button.
+  - Reset clears chosen answers, revealed answers, feedback, locking, and
+    placements for that question only.
+  - Show answer stays available, but after Show answer is used, pressing
+    reset makes the question blank and answerable again.
+  - Submit does not show a score and does not save an attempt.
+  - Submit or time-up returns directly to the opening page.
+
+Answer locking:
+  - Once a question is answered or checked, lock it.
+  - If the user returns to that question, preserve all state:
+      chosen answer(s), correct/wrong colors, feedback, disabled controls.
+  - The user must not be able to answer the same question again during the
+    same official attempt or practice round.
+  - If Show answer is pressed before answering, reveal the answer, lock the
+    question, and mark it incorrect for that attempt.
+
+Question types:
+  1. MCQ
+     - Exactly one correct option.
+     - Options should be plausible and short enough for mobile.
+     - On click, grade immediately, reveal correct option, lock.
+
+  2. Dropdown matching
+     - Term on left.
+     - Dropdown of definitions on right.
+     - User chooses all rows, then presses Check answers.
+     - Rows turn green/red.
+     - Entire question locks after checking.
+     - This matching type must NOT be drag-and-drop.
+
+  3. Sequence / ordering
+     - Drag a card, then drop it into the numbered slot.
+     - A placed card can be dragged back to the Cards area.
+     - Dragged cards must stay opaque and readable while lifted.
+     - When all cards are placed, grade automatically.
+     - Preserve placement and marking if revisited.
+
+  4. Fill / cloze
+     - Each blank locks immediately when typed text matches a model answer.
+     - Correct blank turns green and no more letters can be typed there.
+     - The whole question is marked done only after all blanks are correct.
+     - Accept capitalization variants and reasonable wording variants.
+
+Submission flow:
+  - Submit locks the whole attempt.
+  - Time-up auto-submits.
+  - Show a custom “Please wait...” loading screen for 5 seconds.
+  - Loading screen must fit inside the quiz card/frame.
+  - Do not use black background.
+  - After loading, show result page.
+  - Result page must NOT automatically return to opening page.
+  - Return only when the user presses “Return to opening page”.
+  - Result page includes score, percentage, answered count, completion count.
+
+Attempt history and practice mode:
+  - Store attempt history in localStorage.
+  - Store score, total, answeredCount, submittedAt, timeExpired,
+    remainingSeconds, and wrongIds for every official attempt.
+  - Opening page lists previous attempts while localStorage remains.
+  - Practice mode uses wrongIds from the latest official attempt.
+  - Practice mode is not a counted official attempt.
+  - Practice mode does not use timer pressure.
+  - Practice mode should still lock answers as they are answered.
+
+Navigation protection:
+  - During active official attempts, protect against back/forward/reload/close
+    as much as browsers allow.
+  - Use beforeunload and history guard.
+  - Save active attempt to localStorage repeatedly.
+  - If reload happens anyway, restore the ongoing attempt from localStorage.
+  - Important limitation: no webpage can silently and perfectly block every
+    hard reload, tab close, OS kill, or browser crash. Do not claim stronger
+    protection than browsers technically allow.
+
+=====================================================================
+DESIGN SPECIFICATION
+=====================================================================
+
+Preserve the visual identity exactly unless the user explicitly asks:
+  - warm cream background
+  - soft card design
+  - rounded corners
+  - subtle shadows
+  - teal accent buttons and headings
+  - green correct state
+  - muted red wrong state
+  - warm yellow highlight tags
+  - readable normal sans-serif font
+  - mobile responsive layout
+  - no visually noisy animations
+  - calm stopwatch movement
+  - loading screen uses matching soft colors and custom spinner
+
+Do not switch to dark mode. Do not use black loading screens. Do not add
+external fonts or assets. Do not include images unless the user explicitly
+asks. The quiz must remain one standalone HTML file.
+
+=====================================================================
+WHAT AN AI SHOULD CHANGE FOR A NEW QUIZ
+=====================================================================
+
+Required replacements:
+  A. <title>Media Convergences Mastery Quiz</title>
+  B. Header <h1>...</h1>
+  C. Header subtitle <p>...</p>
+  D. Footer text
+  E. STORE_PREFIX
+  F. BANK array
+
+STORE_PREFIX rules:
+  - Must be unique for each new quiz so browser histories do not mix.
+  - Use lowercase words and underscores.
+  - Example: const STORE_PREFIX = 'media_convergences_ch7_mastery_v1_';
+  - Never reuse the old quiz prefix.
+
+BANK rules:
+  - Replace the empty BANK array with generated questions.
+  - Every question id must be unique and stable: q01, q02, q03...
+  - Keep valid JavaScript object syntax.
+  - Do not use trailing commas if unsure.
+  - Use double quotes inside objects for JSON-like safety.
+  - The finished HTML must run offline when opened directly.
+
+=====================================================================
+QUESTION COUNT GUIDANCE
+=====================================================================
+
+Choose a number that is heavy enough for coverage but light enough for
+repetition. Do not bloat.
+
+Recommended ranges:
+  - 1 small slide deck: 18-26 questions
+  - 2 slide decks: 26-34 questions
+  - 3 slide decks: 32-42 questions
+  - dense readings plus slides: 40-55 questions
+
+For an in-class quiz of 10 questions, the mastery quiz should usually have
+about 3-4 times that number, because it trains the possible question space.
+Avoid filler. Every question must train likely exam memory.
+
+=====================================================================
+QUESTION TYPE MIX
+=====================================================================
+
+Approximate balance:
+  - 35-45% MCQ
+      concepts, main arguments, likely traps, dates that anchor shifts
+  - 25-35% dropdown matching
+      terms/definitions, authors/arguments, examples, differences
+  - 10-20% sequence
+      historical development, causal chain, theory-building order
+  - 10-20% fill/cloze
+      exact terms, names, dates, “X → Y” relations, key phrases
+
+Use all supported question types unless the material truly does not fit one.
+
+=====================================================================
+QUESTION SCHEMAS
+=====================================================================
+
+MCQ:
+{
+  "id":"q01",
+  "type":"mcq",
+  "title":"short label",
+  "source":"Slide 4" or "Reading p. 12",
+  "prompt":"question text",
+  "options":[
+    {"text":"correct answer", "correct":true},
+    {"text":"plausible trap", "correct":false},
+    {"text":"plausible trap", "correct":false},
+    {"text":"plausible trap", "correct":false}
+  ],
+  "explanation":"teach the concept clearly"
+}
+
+Dropdown matching:
+{
+  "id":"q02",
+  "type":"matching",
+  "title":"short label",
+  "source":"Slides 4-6",
+  "prompt":"Match each term to the best definition.",
+  "pairs":[
+    {"left":"term", "right":"definition"},
+    {"left":"author", "right":"main argument"}
+  ],
+  "explanation":"explain the whole set"
+}
+
+Sequence:
+{
+  "id":"q03",
+  "type":"sequence",
+  "title":"short label",
+  "source":"Slide 7",
+  "prompt":"Arrange the development in order.",
+  "items":["first", "second", "third", "fourth"],
+  "explanation":"why this order matters"
+}
+
+Fill/cloze:
+{
+  "id":"q04",
+  "type":"fill",
+  "title":"short label",
+  "source":"Slide 9",
+  "prompt":"Fill in the missing key terms.",
+  "sentences":[
+    {
+      "before":"Theory X distinguishes ",
+      "after":" from Y.",
+      "answers":["signifier", "Signifier"]
+    }
+  ],
+  "explanation":"explain the exact terms"
+}
+
+=====================================================================
+QUESTION-WRITING RULES FOR HIGH SCORES
+=====================================================================
+
+1. Prioritize what the teacher is likely to test in a 10-question in-class
+   quiz.
+2. Turn slide headings into concept checks, but do not merely copy headings.
+3. Extract:
+     - key terms
+     - named theorists/authors
+     - main arguments
+     - dates only when they anchor a historical shift
+     - commonalities and differences
+     - causal chains
+     - concept-example relationships
+     - contradictions and tensions
+     - media affordances and constraints
+     - publics, institutions, infrastructures, labour, inequality
+     - social imaginaries and forms of imagination
+4. If a slide asks “What is the main argument?”, make at least one MCQ and
+   one synthesis/matching question from it.
+5. If a slide asks “difference between X and Y”, make a question that forces
+   that distinction.
+6. If the user mentions “intersectional understanding”, create synthesis
+   questions linking technology, society, politics, economy, culture,
+   language, publics, institutions, labour, inequality, and imagination.
+7. For each deck/material, include at least one final synthesis question.
+8. For multiple decks, include 2-4 cross-deck synthesis questions.
+9. Avoid one-off trivia unless it is a mnemonic anchor or explicitly likely.
+10. Distractors should be plausible misconceptions from nearby material.
+    Use wrong author, wrong medium, wrong date, wrong causal direction, or a
+    true statement attached to the wrong concept.
+11. Explanations must teach why the answer is right.
+12. Keep option text short enough for mobile readability.
+13. Matching sets should usually contain 4-6 pairs.
+14. Sequence sets should usually contain 4-6 steps.
+15. Cloze questions should be reserved for exact terms that matter.
+16. Cloze answers should include capitalization and reasonable variants.
+17. Never mark more than one MCQ option as correct.
+18. Do not duplicate correct options.
+19. Do not make “all of the above” or “none of the above” unless the material
+    specifically needs it.
+20. Avoid ambiguous questions. Each correct answer must be defensible from
+    the material.
+21. Use source labels like “Slide 6” or “Reading p. 22”.
+22. For visual slides, ask what the image/diagram demonstrates.
+23. If a quote is central, paraphrase it into a testable concept.
+24. Use short direct quotations only when necessary.
+25. Do not let generated questions depend on material outside the uploaded
+    scope unless the user asks.
+26. If the user says to forget previous scope, do not reuse prior quiz content.
+27. Preserve the user’s requested language. If the user wants English quiz,
+    write the quiz in English. If Japanese explanations are requested, adapt.
+28. The quiz should teach through repetition, not punish with obscure traps.
+29. Make the final 2-4 questions “boss questions”: cross-topic synthesis.
+30. Before final output, mentally simulate a real 10-question quiz and check
+    that the BANK prepares the user for it.
+
+=====================================================================
+MATERIAL INGESTION PROTOCOL FOR AN AI
+=====================================================================
+
+Step 1. Read all uploaded materials fully.
+Step 2. Inspect slide images/diagrams, not just extracted text.
+Step 3. Make a compact outline by file/page/slide.
+Step 4. Identify the likely exam core:
+          - 10-15 must-know concepts
+          - 10-20 supporting terms/examples
+          - all named authors and their arguments
+          - all dates that anchor historical shifts
+          - all explicit comparison prompts
+Step 5. Decide the number of questions using the ranges above.
+Step 6. Draft questions in a balanced type mix.
+Step 7. Ensure no repetition unless deliberate for memory.
+Step 8. Add explanations that function as mini-review notes.
+Step 9. Add final synthesis questions.
+Step 10. Validate JavaScript syntax.
+Step 11. Output one standalone .html file.
+
+=====================================================================
+QUALITY CHECKLIST BEFORE OUTPUT
+=====================================================================
+
+The generated file must satisfy all checks:
+  [ ] Runs offline by double-clicking the .html file.
+  [ ] No external dependencies.
+  [ ] BANK is not empty.
+  [ ] Question ids are unique.
+  [ ] MCQ has exactly one correct answer.
+  [ ] Matching pairs are clean and not duplicated.
+  [ ] Fill answers include variants.
+  [ ] Sequence order is unambiguous.
+  [ ] Explanations are useful.
+  [ ] Incorrect-question practice button appears after attempts.
+  [ ] Latest attempt wrongIds are recorded.
+  [ ] Timer says only digits.
+  [ ] Stopwatch exists and rotates over 40 minutes.
+  [ ] Show answer cannot corrupt already-marked questions.
+  [ ] Result page does not auto-return.
+  [ ] Opening history persists in localStorage.
+  [ ] Back/reload guard and active-attempt restore remain intact.
+
+=====================================================================
+END OF GENERATION INSTRUCTIONS
+=====================================================================
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Media Convergences Mastery Quiz</title>
+<style>
+  :root {
+    --bg:        #F5EFE0;
+    --bg-soft:   #EDE4D0;
+    --card:      #FBF7EC;
+    --ink:       #2E3A3A;
+    --muted:     #6B7775;
+    --accent:    #5B8A8A;
+    --accent-d:  #406A6A;
+    --good:      #7BA77B;
+    --good-bg:   #DFEBDC;
+    --bad:       #B8746B;
+    --bad-bg:    #EFD9D3;
+    --hi:        #E8C97A;
+    --line:      #d8cfba;
+    --shadow:    0 2px 0 rgba(46,58,58,0.08), 0 6px 18px rgba(46,58,58,0.06);
+    --radius:    14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height:1.55; min-height:100vh; display:flex; justify-content:center;
+    padding:24px 14px 60px;
+  }
+  .wrap { width:100%; max-width:860px; }
+  header { text-align:center; margin-bottom:18px; }
+  header h1 { font-size:1.45rem; margin:0 0 4px; color:var(--accent-d); letter-spacing:.3px; }
+  header p { margin:0; color:var(--muted); font-size:.9rem; }
+  .top-quiz-timer { display:flex; justify-content:flex-end; align-items:center; margin:0 0 10px; min-height:34px; }
+  .data-store { display:none; }
+  .jump { display:flex; flex-wrap:wrap; gap:7px; margin:0 0 12px; justify-content:center; }
+  .jump button { background:var(--card); color:var(--accent-d); border:1px solid var(--line); border-radius:10px; padding:7px 10px; font-weight:700; cursor:pointer; min-width:34px; }
+  .jump button.current { background:var(--accent); color:#fff; border-color:var(--accent-d); }
+  .jump button.done { background:var(--good-bg); border-color:var(--good); }
+  .jump button.miss { background:var(--bad-bg); border-color:var(--bad); }
+  .progress-track { width:100%; height:6px; background:var(--bg-soft); border-radius:999px; overflow:hidden; margin-bottom:16px; }
+  .progress-fill { height:100%; background:var(--accent); width:0%; transition:width .3s ease; }
+  .card { background:var(--card); border-radius:var(--radius); padding:24px 22px 20px; box-shadow:var(--shadow); }
+  .qnum { font-size:.75rem; letter-spacing:1.2px; color:var(--accent); text-transform:uppercase; margin-bottom:6px; font-weight:600; }
+  .qtype-tag { display:inline-block; margin-left:8px; padding:2px 8px; border-radius:999px; background:var(--hi); color:#6b4f1a; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+  .qtext { font-size:1.08rem; margin:4px 0 16px; color:var(--ink); }
+  .source { font-size:.78rem; color:var(--muted); margin-top:-8px; margin-bottom:14px; }
+  code { background:var(--hi); padding:1px 6px; border-radius:4px; font-family:"SF Mono", Menlo, Consolas, monospace; font-size:.92em; }
+  .options { display:grid; gap:9px; }
+  .opt {
+    text-align:left; background:#FFFDF6; border:1.5px solid var(--line); color:var(--ink);
+    padding:11px 13px; border-radius:10px; font-size:.96rem; cursor:pointer;
+    transition:all .15s ease; font-family:inherit; line-height:1.45; width:100%;
+    display:flex; align-items:center; white-space:normal; overflow:hidden;
+  }
+  .opt:hover:not(:disabled) { border-color:var(--accent); background:#FFFEFA; transform:translateY(-1px); }
+  .opt:disabled { cursor:default; }
+  .opt.correct, .opt.reveal { background:var(--good-bg); border-color:var(--good); color:#2f4a2f; }
+  .opt.wrong { background:var(--bad-bg); border-color:var(--bad); color:#5a2c26; }
+  .marker { display:inline-block; width:22px; height:22px; line-height:22px; border-radius:50%; background:var(--bg-soft); color:var(--muted); text-align:center; font-size:.78rem; margin-right:10px; font-weight:700; flex:0 0 auto; }
+  .opt.correct .marker, .opt.reveal .marker { background:var(--good); color:white; }
+  .opt.wrong .marker { background:var(--bad); color:white; }
+  .optText { display:inline-block; }
+  .small { color:var(--muted); font-size:.84rem; }
+
+  .select-match { display:flex; flex-direction:column; gap:10px; }
+  .select-row { display:grid; grid-template-columns:minmax(170px, 34%) 1fr; gap:10px; align-items:center; background:#FFFDF6; border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; }
+  .select-term { font-weight:700; color:var(--accent-d); font-size:.94rem; }
+  .select-row select { width:100%; font:inherit; color:var(--ink); background:white; border:1.5px solid var(--line); border-radius:9px; padding:8px 10px; cursor:pointer; }
+  .select-row.correct { background:var(--good-bg); border-color:var(--good); }
+  .select-row.wrong { background:var(--bad-bg); border-color:var(--bad); }
+  .select-row.correct select { border-color:var(--good); background:#f7fff4; color:#2f4a2f; }
+  .select-row.wrong select { border-color:var(--bad); background:#fff6f3; color:#5a2c26; }
+  .select-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:13px; }
+  .dd-hint { font-size:.85rem; color:var(--accent-d); margin-bottom:14px; padding:8px 12px; background:rgba(91,138,138,.08); border-radius:8px; border-left:3px solid var(--accent); }
+  .dd-card { background:var(--card); border:1.5px solid var(--accent); color:var(--accent-d); padding:7px 12px; border-radius:8px; font-size:.9rem; cursor:grab; font-weight:500; user-select:none; -webkit-user-select:none; touch-action:none; -webkit-user-drag:none; transition:background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease, transform .15s ease; font-family:inherit; line-height:1.4; text-align:left; }
+  .dd-card:hover:not(:disabled) { background:#fff; }
+  .dd-card:active:not(:disabled) { cursor:grabbing; }
+  .dd-card.selected { background:#FFFDF6; color:var(--accent-d); transform:translateY(-1px); box-shadow:0 0 0 3px rgba(91,138,138,.22); }
+  .dd-card.drag-source { opacity:1; background:#FFFDF6; color:var(--accent-d); border-color:var(--accent-d); box-shadow:0 0 0 3px rgba(91,138,138,.18); }
+  .dd-drag-ghost { position:fixed; left:0; top:0; z-index:9998; pointer-events:none; opacity:1; background:#FFFDF6; color:var(--accent-d); border:1.5px solid var(--accent-d); box-shadow:0 14px 30px rgba(46,58,58,.2); transform:translate3d(var(--drag-x,0), var(--drag-y,0), 0); cursor:grabbing; max-width:min(420px, calc(100vw - 28px)); }
+  .dd-card.correct { background:var(--good-bg); border-color:var(--good); color:#2f4a2f; cursor:default; }
+  .dd-card.wrong { background:var(--bad-bg); border-color:var(--bad); color:#5a2c26; cursor:default; }
+  .slot-target { border:2px dashed var(--line); border-radius:8px; background:var(--bg-soft); padding:5px; min-height:44px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:border-color .15s ease, background .15s ease, box-shadow .15s ease; }
+  .slot-target:hover { border-color:var(--accent); }
+  .slot-target.drop-active { border-color:var(--accent-d); background:#FFFDF6; box-shadow:inset 0 0 0 2px rgba(91,138,138,.18); }
+  .slot-target.has-card { border-style:solid; background:#fbf3df; padding:4px; }
+  .slot-target.correct { border-color:var(--good); background:var(--good-bg); border-style:solid; }
+  .slot-target.wrong { border-color:var(--bad); background:var(--bad-bg); border-style:solid; }
+  .slot-target .placeholder { color:var(--muted); font-size:.82rem; }
+  .slot-target .dd-card { width:100%; }
+  .match-list, .order-list { display:flex; flex-direction:column; gap:8px; }
+  .match-row { display:flex; align-items:center; gap:10px; }
+  .match-label { flex:1; font-size:.9rem; color:var(--ink); }
+  .match-row .slot-target { width:320px; flex:none; }
+  .order-row { display:flex; align-items:stretch; gap:10px; }
+  .order-num { width:34px; min-height:44px; border-radius:8px; background:var(--accent); color:white; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0; font-size:1rem; }
+  .order-row .slot-target { flex:1; }
+  .card-bank { margin-top:14px; padding:11px 12px; background:var(--bg-soft); border-radius:10px; border:1px solid var(--line); }
+  .card-bank-label { font-size:.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; font-weight:600; }
+  .card-bank-cards { display:flex; flex-wrap:wrap; gap:6px; min-height:38px; border:1.5px dashed transparent; border-radius:9px; padding:3px; transition:border-color .15s ease, background .15s ease; }
+  .card-bank-cards.drop-active { border-color:var(--accent); background:#FFFDF6; }
+  .fillbox { display:grid; gap:10px; }
+  .fill-row { background:#FFFDF6; border:1.5px solid var(--line); border-radius:10px; padding:12px 13px; font-size:.96rem; }
+  .fill-row input { font:inherit; font-weight:600; color:var(--ink); padding:6px 8px; margin:0 4px; border-radius:8px; border:1.5px solid var(--line); background:#fff; min-width:170px; max-width:100%; }
+  .fill-row input.correct { background:var(--good-bg); border-color:var(--good); color:#2f4a2f; }
+  .feedback { margin-top:14px; padding:11px 13px; border-radius:10px; font-size:.92rem; display:none; line-height:1.5; }
+  .feedback.good { background:var(--good-bg); color:#2f4a2f; display:block; }
+  .feedback.bad { background:var(--bad-bg); color:#5a2c26; display:block; }
+  .feedback.info { background:var(--bg-soft); color:var(--ink); display:block; }
+  .actions { display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+  button.btn { background:var(--accent); color:#FBF7EC; border:none; padding:11px 18px; border-radius:10px; font-size:.96rem; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s ease, transform .1s ease; display:inline-flex; align-items:center; justify-content:center; vertical-align:middle; }
+  button.btn:hover { background:var(--accent-d); }
+  button.btn:active { transform:translateY(1px); }
+  button.btn.ghost { background:transparent; color:var(--accent-d); border:1.5px solid var(--accent); }
+  button.btn.ghost:hover { background:var(--bg-soft); }
+  button.btn.arrow { width:50px; padding:11px 0; font-size:1.2rem; line-height:1; }
+  button.btn.retry-reset { width:50px; padding:11px 0; font-size:1.2rem; line-height:1; }
+  .result { text-align:center; padding:12px 6px 6px; }
+  .result h2 { margin:0 0 6px; color:var(--accent-d); font-size:1.5rem; }
+  .score-big { font-size:2.6rem; font-weight:700; color:var(--ink); margin:12px 0 4px; }
+  footer { text-align:center; color:var(--muted); font-size:.78rem; margin-top:20px; }
+
+  .hidden { display:none !important; }
+  .opening { text-align:center; padding:28px 18px 24px; }
+  .opening h2 { margin:0 0 8px; color:var(--accent-d); font-size:1.55rem; }
+  .opening p { margin:8px auto; max-width:620px; color:var(--muted); }
+  .opening .attempt-badge { display:inline-block; margin:14px 0 18px; background:var(--bg-soft); border:1px solid var(--line); border-radius:999px; padding:7px 14px; color:var(--ink); font-weight:700; }
+  .opening-actions { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .practice-message { margin:12px auto 0; max-width:520px; }
+  .attempt-history { margin:18px auto 18px; max-width:620px; text-align:left; background:#FFFDF6; border:1.5px solid var(--line); border-radius:var(--radius); padding:14px; box-shadow:0 2px 0 rgba(46,58,58,0.04); }
+  .attempt-history h3 { margin:0 0 10px; color:var(--accent-d); font-size:1rem; }
+  .attempt-list { list-style:none; padding:0; margin:0; display:grid; gap:8px; }
+  .attempt-list li { display:flex; justify-content:space-between; gap:10px; align-items:center; background:var(--bg-soft); border:1px solid var(--line); border-radius:10px; padding:9px 11px; font-size:.9rem; }
+  .attempt-list .attempt-meta { color:var(--muted); font-size:.8rem; }
+  .attempt-list .attempt-score { color:var(--ink); font-weight:800; white-space:nowrap; }
+  .submit-row { justify-content:space-between; align-items:center; }
+  .submit-note { color:var(--muted); font-size:.84rem; }
+  .timer-pill { position:relative; overflow:hidden; display:inline-flex; align-items:center; gap:9px; min-width:104px; justify-content:center; background:linear-gradient(180deg, #FFFDF6, var(--card)); padding:7px 15px 8px 12px; border-radius:999px; border:1px solid var(--line); transition:background .35s ease, border-color .35s ease, color .35s ease, box-shadow .35s ease; font-weight:800; color:var(--accent-d); box-shadow:0 5px 16px rgba(46,58,58,0.07), inset 0 1px 0 rgba(255,255,255,.7); letter-spacing:.6px; }
+  .stopwatch { position:relative; width:22px; height:22px; border:2px solid currentColor; border-radius:50%; flex:0 0 auto; opacity:.9; box-shadow:inset 0 0 0 2px rgba(255,255,255,.45); }
+  .stopwatch::before { content:""; position:absolute; width:8px; height:4px; border-radius:4px 4px 2px 2px; background:currentColor; left:50%; top:-7px; transform:translateX(-50%); opacity:.82; }
+  .stopwatch::after { content:""; position:absolute; width:5px; height:3px; border-radius:4px; background:currentColor; right:-5px; top:1px; transform:rotate(38deg); opacity:.65; }
+  .stopwatch-hand { position:absolute; left:50%; top:50%; width:2px; height:7px; border-radius:999px; background:currentColor; transform-origin:50% 100%; transform:translate(-50%, -100%) rotate(0deg); }
+  .timer-pill.running .stopwatch-hand { animation:stopwatchTick var(--timer-duration, 2400s) linear forwards; }
+  .stopwatch-hand::after { content:""; position:absolute; left:50%; bottom:-3px; width:4px; height:4px; border-radius:50%; background:currentColor; transform:translateX(-50%); }
+  .timer-pill.warning { background:linear-gradient(180deg, #fff8f2, var(--bad-bg)); border-color:var(--bad); color:#5a2c26; }
+  .timer-pill.warning .stopwatch { opacity:1; }
+  .timer-pill.urgent { box-shadow:0 0 0 3px rgba(255,80,80,.14), 0 5px 16px rgba(46,58,58,0.07); }
+  .loading-screen { display:flex; align-items:center; justify-content:center; padding:12px 0; min-height:240px; background:transparent; }
+  .loading-panel { width:min(100%, 460px); margin:0 auto; background:linear-gradient(180deg, #FFFDF6 0%, var(--card) 100%); color:var(--ink); border:1.5px solid var(--line); border-radius:18px; padding:26px 18px 22px; box-shadow:0 10px 28px rgba(46,58,58,.08), inset 0 1px 0 rgba(255,255,255,.6); display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .loading-title { font-size:1.35rem; font-weight:700; margin:16px 0 8px; letter-spacing:.2px; color:var(--accent-d); text-align:center; }
+  .loading-sub { color:var(--muted); font-size:.92rem; text-align:center; max-width:360px; line-height:1.6; }
+  .loading-mini { margin-top:10px; color:var(--muted); font-size:.8rem; text-align:center; }
+  .wait-orb { position:relative; width:108px; height:108px; }
+  .wait-core { position:absolute; inset:38px; border-radius:50%; background:linear-gradient(180deg, var(--card), #fff); border:1px solid var(--line); box-shadow:inset 0 2px 8px rgba(46,58,58,.06); }
+  .wait-ring { position:absolute; border-radius:50%; border:4px solid transparent; }
+  .wait-ring.ring-a { inset:0; border-top-color:var(--accent); border-right-color:#82AAA6; animation:spinRing 1s linear infinite; }
+  .wait-ring.ring-b { inset:12px; border-bottom-color:var(--hi); border-left-color:#9BBDB5; animation:spinRingReverse 1.35s linear infinite; }
+  .wait-dot { position:absolute; width:12px; height:12px; border-radius:50%; background:#E8C97A; top:10px; left:calc(50% - 6px); box-shadow:0 0 0 5px rgba(232,201,122,.14); animation:dotPulse 1.2s ease-in-out infinite; }
+  @keyframes spinRing { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+  @keyframes spinRingReverse { from { transform:rotate(360deg); } to { transform:rotate(0deg); } }
+  @keyframes dotPulse { 0%,100% { transform:scale(1); opacity:1; } 50% { transform:scale(.82); opacity:.75; } }
+  .guard-toast { position:fixed; left:50%; top:18px; transform:translateX(-50%) translateY(-10px); opacity:0; pointer-events:none; z-index:9999; background:linear-gradient(180deg, #FFFDF6, var(--card)); color:var(--accent-d); border:1.5px solid var(--line); border-radius:999px; padding:9px 15px; box-shadow:0 10px 26px rgba(46,58,58,.12); font-size:.9rem; font-weight:700; transition:opacity .18s ease, transform .18s ease; }
+  .guard-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  @keyframes stopwatchTick { from { transform:translate(-50%, -100%) rotate(0deg); } to { transform:translate(-50%, -100%) rotate(360deg); } }
+  @media (max-width: 560px) {
+    body { padding:14px 10px 40px; }
+    .card { padding:20px 16px 18px; }
+    .qtext { font-size:1rem; }
+    header h1 { font-size:1.25rem; }
+    .match-row { flex-direction:column; align-items:stretch; gap:4px; }
+    .select-row { grid-template-columns:1fr; gap:6px; }
+    .match-row .slot-target { width:100%; }
+    .fill-row input { width:100%; margin:8px 0 0; }
+    .loading-panel { padding:22px 14px 18px; }
+    .wait-orb { width:92px; height:92px; }
+    .wait-core { inset:32px; }
+    .loading-title { font-size:1.2rem; }
+    .timer-pill { min-width:98px; padding-right:13px; }
+    .stopwatch { width:20px; height:20px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top-quiz-timer hidden" id="quizBar">
+    <span class="timer-pill" id="timerPill"><span class="stopwatch" aria-hidden="true"><span class="stopwatch-hand"></span></span><strong id="timer">40:00</strong></span>
+  </div>
+  <header>
+    <h1>Media Convergences Mastery Quiz</h1>
+    <p>Briggs & Burke Chapter 7 · key points, milestones, arguments, and synthesis 🌿</p>
+  </header>
+  <div class="data-store" aria-hidden="true">
+    <span id="round">1</span>
+    <span id="qIdx">1</span>
+    <span id="qTotal">0</span>
+    <span id="score">0</span>
+    <span id="best">—</span>
+    <span id="completed">0</span>
+  </div>
+  <div class="jump" id="jump"></div>
+  <div class="progress-track" id="progressTrack"><div class="progress-fill" id="progress"></div></div>
+  <div class="card" id="card"></div>
+  <footer>Media Convergences · computers, cable, satellites, Internet, globalization, and education</footer>
+</div>
+<script>
+const BANK = [
+  {
+    "id": "q01",
+    "type": "mcq",
+    "title": "Meaning of convergence",
+    "source": "Reading p. 237",
+    "prompt": "From the 1980s onward, what did media 'convergence' most commonly refer to in this chapter?",
+    "options": [
+      {
+        "text": "digital media integration",
+        "correct": true
+      },
+      {
+        "text": "state control of newspapers",
+        "correct": false
+      },
+      {
+        "text": "return of railway transport",
+        "correct": false
+      },
+      {
+        "text": "decline of all entertainment",
+        "correct": false
+      }
+    ],
+    "explanation": "In this chapter, convergence is mainly tied to digital technology bringing text, numbers, images and sound into one computational environment. It is not simply about one old medium replacing another."
+  },
+  {
+    "id": "q02",
+    "type": "mcq",
+    "title": "Communication redefined",
+    "source": "Reading p. 237",
+    "prompt": "What major shift does the chapter identify in dictionary definitions of 'communication' between 1955 and 1972?",
+    "options": [
+      {
+        "text": "toward electronic technique",
+        "correct": true
+      },
+      {
+        "text": "toward handwritten correspondence",
+        "correct": false
+      },
+      {
+        "text": "toward railway transportation only",
+        "correct": false
+      },
+      {
+        "text": "toward religious public speech",
+        "correct": false
+      }
+    ],
+    "explanation": "The older definition stressed the exchange of ideas by speech, writing or signs. By 1972, the definition had moved toward information conveyed through electronic or mechanical techniques."
+  },
+  {
+    "id": "q03",
+    "type": "fill",
+    "title": "Early convergence markers",
+    "source": "Reading p. 237",
+    "prompt": "Fill in the key names and institutions that anchor the chapter's opening definition of convergence.",
+    "sentences": [
+      {
+        "before": "The word convergence was used by ",
+        "after": " before it became fashionable.",
+        "answers": [
+          "Ithiel de Sola Pool",
+          "Ithiel Pool",
+          "de Sola Pool"
+        ]
+      },
+      {
+        "before": "In 2008, the British government created a ",
+        "after": " to study technological implications for media and communications.",
+        "answers": [
+          "Convergence Think-Tank",
+          "Convergence Think Tank",
+          "convergence think tank"
+        ]
+      }
+    ],
+    "explanation": "The chapter frames convergence as an existing communications concept before it became a buzzword, then shows it becoming an official policy concern by 2008."
+  },
+  {
+    "id": "q04",
+    "type": "matching",
+    "title": "Opening concepts",
+    "source": "Reading pp. 237-238",
+    "prompt": "Match each opening concept to its best meaning in the chapter.",
+    "pairs": [
+      {
+        "left": "Digitization",
+        "right": "A continuing process that integrates text, numbers, images and sound through computers."
+      },
+      {
+        "left": "Convergence as organization",
+        "right": "The coming together of media industries and telecommunications industries."
+      },
+      {
+        "left": "Information superhighway",
+        "right": "A 1990s transport metaphor for shared digital communications routes."
+      },
+      {
+        "left": "Wired Nation",
+        "right": "Ralph Lee Smith's image of cable as an electronic communications highway."
+      },
+      {
+        "left": "Infobahn",
+        "right": "Wired magazine's highway-flavoured label for the new data routes."
+      }
+    ],
+    "explanation": "The opening moves from concept to metaphor: convergence names both technical integration and industrial/social coming together, while highway language sells that change to the public."
+  },
+  {
+    "id": "q05",
+    "type": "sequence",
+    "title": "Highway rhetoric",
+    "source": "Reading p. 238",
+    "prompt": "Arrange these milestones in the rise of the 'information highway' rhetoric.",
+    "items": [
+      "Ralph Lee Smith describes cable as an electronic communications highway for a wired nation.",
+      "The 1980s make the possible range of digital services easier to imagine.",
+      "Clinton and Gore bring superhighway language into Internet politics.",
+      "Wired launches and popularizes labels such as Infobahn."
+    ],
+    "explanation": "The metaphor develops from early cable imagination in 1972, through 1980s digital possibility, into 1990s Internet politics and magazine culture."
+  },
+  {
+    "id": "q06",
+    "type": "mcq",
+    "title": "Why computers come first",
+    "source": "Reading p. 238",
+    "prompt": "Why does the chapter place computers first in a history of converging media?",
+    "options": [
+      {
+        "text": "they reshaped many services",
+        "correct": true
+      },
+      {
+        "text": "they replaced every broadcast station",
+        "correct": false
+      },
+      {
+        "text": "they ended all printed publishing",
+        "correct": false
+      },
+      {
+        "text": "they began as cheap household toys",
+        "correct": false
+      }
+    ],
+    "explanation": "Once computers stopped being seen merely as calculators or office aids, they enabled many communication and media services to take new forms."
+  },
+  {
+    "id": "q07",
+    "type": "mcq",
+    "title": "Early computer stimulus",
+    "source": "Reading pp. 238-239",
+    "prompt": "What was the main early stimulus behind the first huge computers discussed in the chapter?",
+    "options": [
+      {
+        "text": "war needs",
+        "correct": true
+      },
+      {
+        "text": "family leisure demand",
+        "correct": false
+      },
+      {
+        "text": "Hollywood film budgets",
+        "correct": false
+      },
+      {
+        "text": "retail shopping networks",
+        "correct": false
+      }
+    ],
+    "explanation": "The first computers such as Colossus and ENIAC were giant machines tied to military purposes. The chapter stresses war, not profit, as the original push."
+  },
+  {
+    "id": "q08",
+    "type": "fill",
+    "title": "Giant machines",
+    "source": "Reading pp. 238-239 and Fig. 27",
+    "prompt": "Fill in the machine names and technical details that mark the early computer age.",
+    "sentences": [
+      {
+        "before": "The Bletchley Park electronic code-breaker was called ",
+        "after": ".",
+        "answers": [
+          "Colossus",
+          "the Colossus"
+        ]
+      },
+      {
+        "before": "The University of Pennsylvania developed ",
+        "after": " between 1942 and 1946.",
+        "answers": [
+          "ENIAC",
+          "Electronic Numerator Integrator and Computer"
+        ]
+      },
+      {
+        "before": "Alan Turing described early computers as ",
+        "after": " machines in 1950.",
+        "answers": [
+          "universal",
+          "universal machines"
+        ]
+      }
+    ],
+    "explanation": "Figure 27 and the surrounding text tie early computers to code-breaking, military calculation and the idea that one computer could perform many computing processes."
+  },
+  {
+    "id": "q09",
+    "type": "matching",
+    "title": "Early hardware people",
+    "source": "Reading pp. 239-240",
+    "prompt": "Match each person or concept to the milestone linked with it.",
+    "pairs": [
+      {
+        "left": "Bardeen and Brattain",
+        "right": "Devised early solid-state transistor devices at Bell Labs."
+      },
+      {
+        "left": "Jack Kilby",
+        "right": "Applied for a patent for the integrated circuit in 1959."
+      },
+      {
+        "left": "Robert Noyce",
+        "right": "Helped found Fairchild and Intel and popularized microelectronics as revolutionary."
+      },
+      {
+        "left": "George Boole",
+        "right": "Provided algebra later used in digital logic systems."
+      },
+      {
+        "left": "Ted Hoff",
+        "right": "Devised the microprocessor in 1971."
+      }
+    ],
+    "explanation": "The chapter links convergence to a chain of hardware inventions: transistor, integrated circuit, Boolean logic, and microprocessor."
+  },
+  {
+    "id": "q10",
+    "type": "mcq",
+    "title": "Transistor effect",
+    "source": "Reading p. 239",
+    "prompt": "What long-term effect did the replacement of valves by transistors have on computers?",
+    "options": [
+      {
+        "text": "smaller scale",
+        "correct": true
+      },
+      {
+        "text": "more handwritten calculation",
+        "correct": false
+      },
+      {
+        "text": "less portable media hardware",
+        "correct": false
+      },
+      {
+        "text": "no change in machine design",
+        "correct": false
+      }
+    ],
+    "explanation": "The transistor was not immediately more reliable, but over time it made a revolution in scale possible, eventually helping computers become portable."
+  },
+  {
+    "id": "q11",
+    "type": "mcq",
+    "title": "Integrated circuits",
+    "source": "Reading p. 240",
+    "prompt": "What was the core idea of the integrated circuit as explained through Kilby's log book?",
+    "options": [
+      {
+        "text": "one silicon slice",
+        "correct": true
+      },
+      {
+        "text": "a room of separate valves",
+        "correct": false
+      },
+      {
+        "text": "a public radio monopoly",
+        "correct": false
+      },
+      {
+        "text": "a printed newspaper chain",
+        "correct": false
+      }
+    ],
+    "explanation": "Kilby imagined resistors, capacitors, transistors and diodes made on a single slice of silicon, creating extreme miniaturization."
+  },
+  {
+    "id": "q12",
+    "type": "fill",
+    "title": "Moore's Law",
+    "source": "Reading pp. 240-241",
+    "prompt": "Fill in the exact memory anchors for Moore's Law and chip development.",
+    "sentences": [
+      {
+        "before": "Gordon Moore formulated what became known as ",
+        "after": " in 1964.",
+        "answers": [
+          "Moore's Law",
+          "Moore’s Law",
+          "Moore Law"
+        ]
+      },
+      {
+        "before": "It stated that the number of transistors on a chip would double every ",
+        "after": ".",
+        "answers": [
+          "18 months",
+          "eighteen months"
+        ]
+      },
+      {
+        "before": "Intel introduced its RAM chip in ",
+        "after": ".",
+        "answers": [
+          "1970"
+        ]
+      }
+    ],
+    "explanation": "Moore's Law became a key shorthand for rapid chip development, while cheaper RAM helped support computers of many sizes and generations."
+  },
+  {
+    "id": "q13",
+    "type": "mcq",
+    "title": "Microprocessor consequence",
+    "source": "Reading p. 240",
+    "prompt": "What did the Intel microprocessor make possible, beyond simply increasing computer power?",
+    "options": [
+      {
+        "text": "decentralized use",
+        "correct": true
+      },
+      {
+        "text": "state-only broadcasting",
+        "correct": false
+      },
+      {
+        "text": "slower memory pricing",
+        "correct": false
+      },
+      {
+        "text": "the end of all software",
+        "correct": false
+      }
+    ],
+    "explanation": "The microprocessor increased power while also decentralizing computer use, allowing computing to spread away from large centralized machines."
+  },
+  {
+    "id": "q14",
+    "type": "sequence",
+    "title": "Hardware miniaturization",
+    "source": "Reading pp. 238-241",
+    "prompt": "Arrange these hardware milestones in developmental order.",
+    "items": [
+      "Giant valve-based machines such as Colossus and ENIAC dominate early computing.",
+      "Transistors begin replacing valves and make miniaturization possible.",
+      "Integrated circuits place circuit elements on tiny chips.",
+      "Intel introduces RAM and lowers the cost of memory.",
+      "Ted Hoff's microprocessor becomes the heart of later computers."
+    ],
+    "explanation": "The story is not perfectly linear, but this sequence captures the main hardware compression: room-sized machines to chips and microprocessors."
+  },
+  {
+    "id": "q15",
+    "type": "matching",
+    "title": "Business geography",
+    "source": "Reading pp. 241-242",
+    "prompt": "Match each place, firm, or country to its role in the chapter's computer history.",
+    "pairs": [
+      {
+        "left": "Silicon Valley",
+        "right": "A former fruit-grove region that became central on the global communications map."
+      },
+      {
+        "left": "IBM",
+        "right": "A powerful early computer firm with a culture suited to governments and big companies."
+      },
+      {
+        "left": "Manchester Mark I",
+        "right": "A British computer built and marketed commercially in 1950."
+      },
+      {
+        "left": "Japan",
+        "right": "A major producer of consumer communications products such as VCRs and tape recorders."
+      },
+      {
+        "left": "Sony Walkman",
+        "right": "A portable stereo that changed personal listening and highlighted mobility."
+      }
+    ],
+    "explanation": "The chapter avoids a one-country story: Britain, the United States and Japan all matter, but in different institutional and market settings."
+  },
+  {
+    "id": "q16",
+    "type": "mcq",
+    "title": "IBM's old strength",
+    "source": "Reading p. 241",
+    "prompt": "Why does the chapter treat IBM's early computer era as limited despite its huge advantage?",
+    "options": [
+      {
+        "text": "it missed the PC path",
+        "correct": true
+      },
+      {
+        "text": "it lacked any government clients",
+        "correct": false
+      },
+      {
+        "text": "it invented every home game",
+        "correct": false
+      },
+      {
+        "text": "it made only Japanese televisions",
+        "correct": false
+      }
+    ],
+    "explanation": "IBM had enormous early strength, but its multiple computer lines did not point toward what the microprocessor made possible: the personal computer."
+  },
+  {
+    "id": "q17",
+    "type": "mcq",
+    "title": "British and American divergence",
+    "source": "Reading p. 241",
+    "prompt": "Why did Ferranti's British computer success not lead to the same dominance as the United States?",
+    "options": [
+      {
+        "text": "less military access",
+        "correct": true
+      },
+      {
+        "text": "no early commercial computers",
+        "correct": false
+      },
+      {
+        "text": "too many VCR factories",
+        "correct": false
+      },
+      {
+        "text": "stronger Hollywood support",
+        "correct": false
+      }
+    ],
+    "explanation": "The chapter notes that Ferranti did not have access to the massive American military, naval and space establishment that helped shape US development."
+  },
+  {
+    "id": "q18",
+    "type": "fill",
+    "title": "Human-computer visions",
+    "source": "Reading p. 243",
+    "prompt": "Fill in the names linked to human-computer interaction and networked computing.",
+    "sentences": [
+      {
+        "before": "Joseph ",
+        "after": " wrote on Man-Computer Symbiosis in 1960.",
+        "answers": [
+          "Licklider",
+          "J. C. R. Licklider",
+          "J.C.R. Licklider"
+        ]
+      },
+      {
+        "before": "Xerox Palo Alto Laboratory pioneers developed the ",
+        "after": ", first called an X-Y position indicator.",
+        "answers": [
+          "mouse",
+          "computer mouse"
+        ]
+      },
+      {
+        "before": "Douglas Engelbart demonstrated his oNLine System in San Francisco in ",
+        "after": ".",
+        "answers": [
+          "1968"
+        ]
+      }
+    ],
+    "explanation": "The chapter treats interaction design, the mouse and networked computing visions as crucial parts of convergence, not side decorations."
+  },
+  {
+    "id": "q19",
+    "type": "matching",
+    "title": "Inside computer evolution",
+    "source": "Reading pp. 242-243",
+    "prompt": "Match each computing feature to its milestone or significance.",
+    "pairs": [
+      {
+        "left": "Magnetic core memory",
+        "right": "Incorporated into computers by Jay Forrester in 1953."
+      },
+      {
+        "left": "FORTRAN",
+        "right": "John Backus's 1957 formula-translating programming language."
+      },
+      {
+        "left": "Software",
+        "right": "The creative side without which computers would sit inert."
+      },
+      {
+        "left": "Modem",
+        "right": "A device needed to transmit computer data over telephone lines."
+      },
+      {
+        "left": "Mouse",
+        "right": "An input device that controls a pointer on a computer screen."
+      }
+    ],
+    "explanation": "Media convergence depended on multiple layers: memory, languages, software, interfaces and data transmission all mattered."
+  },
+  {
+    "id": "q20",
+    "type": "mcq",
+    "title": "Computers and print",
+    "source": "Reading p. 244",
+    "prompt": "How did computerization affect traditional print media according to the chapter?",
+    "options": [
+      {
+        "text": "it changed print routines",
+        "correct": true
+      },
+      {
+        "text": "it abolished all books quickly",
+        "correct": false
+      },
+      {
+        "text": "it made libraries irrelevant at once",
+        "correct": false
+      },
+      {
+        "text": "it ended newspaper advertising",
+        "correct": false
+      }
+    ],
+    "explanation": "Books, magazines and newspapers were increasingly edited, designed, printed and distributed through computer routines; print was transformed rather than instantly erased."
+  },
+  {
+    "id": "q21",
+    "type": "mcq",
+    "title": "Cornucopia",
+    "source": "Reading p. 245",
+    "prompt": "What did 'cornucopia' mean when applied to electronic media?",
+    "options": [
+      {
+        "text": "abundance after scarcity",
+        "correct": true
+      },
+      {
+        "text": "state control of all choice",
+        "correct": false
+      },
+      {
+        "text": "a return to only one channel",
+        "correct": false
+      },
+      {
+        "text": "the death of consumer culture",
+        "correct": false
+      }
+    ],
+    "explanation": "Cornucopia means abundance. The chapter uses it to show the abandonment of the old broadcasting logic of wavelength scarcity."
+  },
+  {
+    "id": "q22",
+    "type": "mcq",
+    "title": "Choice as a trap",
+    "source": "Reading p. 245",
+    "prompt": "Why did Anthony Smith call media choice a 'chimera of the age'?",
+    "options": [
+      {
+        "text": "more channels could repeat sameness",
+        "correct": true
+      },
+      {
+        "text": "choice was banned by all governments",
+        "correct": false
+      },
+      {
+        "text": "viewers rejected entertainment totally",
+        "correct": false
+      },
+      {
+        "text": "wavelength scarcity had expanded",
+        "correct": false
+      }
+    ],
+    "explanation": "The chapter asks whether more channels really meant genuine or beneficial choice, or whether they might just multiply similar content."
+  },
+  {
+    "id": "q23",
+    "type": "matching",
+    "title": "Abundance and crisis",
+    "source": "Reading pp. 245-246",
+    "prompt": "Match each institution or policy term to the issue connected with it.",
+    "pairs": [
+      {
+        "left": "Press",
+        "right": "Often described as being in crisis, though not simply disappearing."
+      },
+      {
+        "left": "Post Office",
+        "right": "A universal-service institution facing technical and financial strain."
+      },
+      {
+        "left": "Broadcast networks",
+        "right": "Placed under scrutiny as cable and competition expanded."
+      },
+      {
+        "left": "Public interest",
+        "right": "A question raised by cable and satellites, not just by broadcasting."
+      },
+      {
+        "left": "Deregulation",
+        "right": "A keyword linked to abundance, competition and market optimism."
+      }
+    ],
+    "explanation": "Cornucopia did not just create shiny gadgets; it pressured institutions, regulators and assumptions about public service."
+  },
+  {
+    "id": "q24",
+    "type": "mcq",
+    "title": "Deregulation paradox",
+    "source": "Reading p. 246",
+    "prompt": "What paradox does the chapter point out about governments committed to deregulation?",
+    "options": [
+      {
+        "text": "they still stayed involved",
+        "correct": true
+      },
+      {
+        "text": "they ended cable completely",
+        "correct": false
+      },
+      {
+        "text": "they banned private investment",
+        "correct": false
+      },
+      {
+        "text": "they restored wavelength scarcity",
+        "correct": false
+      }
+    ],
+    "explanation": "Even Thatcherite Britain and Reagan's United States, both committed to competition, found it difficult to stay out of media infrastructure and policy."
+  },
+  {
+    "id": "q25",
+    "type": "fill",
+    "title": "Digital highways",
+    "source": "Reading p. 246",
+    "prompt": "Fill in Eryl Davies's core idea about digital information sharing one infrastructure.",
+    "sentences": [
+      {
+        "before": "When every source of information is reduced to a stream of ",
+        "after": ", it can share the same highways and exchanges.",
+        "answers": [
+          "digital information",
+          "digital data"
+        ]
+      },
+      {
+        "before": "Davies stressed far more capacity, also called ",
+        "after": ".",
+        "answers": [
+          "bandwidth"
+        ]
+      }
+    ],
+    "explanation": "Davies's point is a neat convergence capsule: once everything becomes digital data, different kinds of information can use common routes."
+  },
+  {
+    "id": "q26",
+    "type": "mcq",
+    "title": "Plurality before convergence",
+    "source": "Reading p. 247",
+    "prompt": "What did Glen O. Robinson's Communications for Tomorrow emphasize?",
+    "options": [
+      {
+        "text": "plural technologies",
+        "correct": true
+      },
+      {
+        "text": "one final media machine",
+        "correct": false
+      },
+      {
+        "text": "a ban on common carriers",
+        "correct": false
+      },
+      {
+        "text": "the end of policy choices",
+        "correct": false
+      }
+    ],
+    "explanation": "Robinson emphasized the plurality of technologies and policy issues rather than treating convergence as a simple one-direction process."
+  },
+  {
+    "id": "q27",
+    "type": "matching",
+    "title": "Players and institutions",
+    "source": "Reading pp. 246-248",
+    "prompt": "Match each player or example to its role in the chapter's institutional story.",
+    "pairs": [
+      {
+        "left": "China in 1976",
+        "right": "Converted television into a national network linking Beijing with provinces and municipalities."
+      },
+      {
+        "left": "Door Dashan",
+        "right": "New Indian organization set up to manage television separately from All India Radio."
+      },
+      {
+        "left": "AT&T",
+        "right": "Its break-up followed the largest antitrust case in American history."
+      },
+      {
+        "left": "Intermedia",
+        "right": "A magazine offering topical surveys on media technologies and countries."
+      },
+      {
+        "left": "John Black",
+        "right": "A Canadian librarian who grouped new technologies under nine headings."
+      }
+    ],
+    "explanation": "The chapter repeatedly shifts from devices to institutions: national networks, regulatory cases, specialist publications and libraries all shape media change."
+  },
+  {
+    "id": "q28",
+    "type": "mcq",
+    "title": "Games and computers",
+    "source": "Reading pp. 248-249",
+    "prompt": "Why are video games important in the chapter's account of personal computing?",
+    "options": [
+      {
+        "text": "they drew users in",
+        "correct": true
+      },
+      {
+        "text": "they ended all television watching",
+        "correct": false
+      },
+      {
+        "text": "they began as library catalogues",
+        "correct": false
+      },
+      {
+        "text": "they removed entertainment markets",
+        "correct": false
+      }
+    ],
+    "explanation": "For many users, entertainment and games helped turn attention toward computers before educational or book-related uses dominated public discussion."
+  },
+  {
+    "id": "q29",
+    "type": "sequence",
+    "title": "Apple and Microsoft timeline",
+    "source": "Reading pp. 249-251",
+    "prompt": "Arrange these personal computer and software milestones in chronological order.",
+    "items": [
+      "The first computer shop opens in Los Angeles and Byte appears.",
+      "Wozniak and Jobs launch the factory-assembled Apple I.",
+      "Apple becomes a public company valued at about $1.2 billion.",
+      "Apple's 1984 Macintosh commercial airs during the Superbowl.",
+      "Microsoft dominates software and later declares itself hard core about the Internet."
+    ],
+    "explanation": "The sequence moves from hobbyist and retail cultures into Apple branding, then toward software dominance and the Internet turn."
+  },
+  {
+    "id": "q30",
+    "type": "mcq",
+    "title": "Apple's 1984 ad",
+    "source": "Reading p. 250",
+    "prompt": "In the chapter's reading of Apple's 1984 Macintosh advertisement, what did Big Brother represent commercially?",
+    "options": [
+      {
+        "text": "IBM",
+        "correct": true
+      },
+      {
+        "text": "Atari",
+        "correct": false
+      },
+      {
+        "text": "Telidon",
+        "correct": false
+      },
+      {
+        "text": "Door Dashan",
+        "correct": false
+      }
+    ],
+    "explanation": "The commercial cast IBM as the controlling Big Brother and Apple as resistance, turning a product launch into a cultural drama."
+  },
+  {
+    "id": "q31",
+    "type": "mcq",
+    "title": "Software's role",
+    "source": "Reading p. 250",
+    "prompt": "By the mid-1980s, what had become the key to increasing the use of computers?",
+    "options": [
+      {
+        "text": "software",
+        "correct": true
+      },
+      {
+        "text": "satellite footprints",
+        "correct": false
+      },
+      {
+        "text": "television licences",
+        "correct": false
+      },
+      {
+        "text": "analogue videophones",
+        "correct": false
+      }
+    ],
+    "explanation": "With many computers incompatible and quickly obsolete, software became the key to broader use. Microsoft became the largest supplier."
+  },
+  {
+    "id": "q32",
+    "type": "fill",
+    "title": "Computer-telecom convergence",
+    "source": "Reading p. 251",
+    "prompt": "Fill in the phrase used by the Financial Times survey to describe computing and telecommunications.",
+    "sentences": [
+      {
+        "before": "The 1992 Financial Times survey acclaimed the ",
+        "after": " convergence of computing and telecommunications.",
+        "answers": [
+          "slow but inevitable",
+          "slow, but inevitable"
+        ]
+      },
+      {
+        "before": "By the later 1990s, optimism turned toward interactivity and ",
+        "after": ".",
+        "answers": [
+          "networking"
+        ]
+      }
+    ],
+    "explanation": "The phrase matters because it frames convergence as gradual but unavoidable, not as a single explosive event."
+  },
+  {
+    "id": "q33",
+    "type": "matching",
+    "title": "Satellite basics",
+    "source": "Reading pp. 251-254",
+    "prompt": "Match each satellite milestone or term to the best description.",
+    "pairs": [
+      {
+        "left": "Sputnik",
+        "right": "The 1957 Soviet launch that accelerated American space and satellite interest."
+      },
+      {
+        "left": "Arthur C. Clarke",
+        "right": "Predicted a chain of geo-stationary radio satellites in 1945."
+      },
+      {
+        "left": "Telstar",
+        "right": "NASA-planned satellite used for experimental transatlantic telecasts."
+      },
+      {
+        "left": "Intelsat I / Early Bird",
+        "right": "A 1965 geo-stationary satellite made by Hughes and commissioned by NASA."
+      },
+      {
+        "left": "Footprint",
+        "right": "The terrestrial coverage area that helped determine an orbital slot's value."
+      }
+    ],
+    "explanation": "Satellite history combines Cold War rivalry, science fiction imagination, technical orbits, business ownership and global allocation politics."
+  },
+  {
+    "id": "q34",
+    "type": "sequence",
+    "title": "Satellite milestones",
+    "source": "Reading pp. 252-254",
+    "prompt": "Arrange these satellite milestones in order.",
+    "items": [
+      "Arthur C. Clarke predicts geo-stationary radio satellites.",
+      "The Soviet Union launches Sputnik.",
+      "Telstar carries experimental transatlantic telecasts.",
+      "Intelsat is established under intergovernmental agreements.",
+      "Intelsat I, named Early Bird, is launched."
+    ],
+    "explanation": "The order shows how imagination, Cold War shock, experimental broadcasting and international organization built the satellite field."
+  },
+  {
+    "id": "q35",
+    "type": "mcq",
+    "title": "Cable survived satellites",
+    "source": "Reading p. 252",
+    "prompt": "Why did satellites not simply replace cable, according to the chapter?",
+    "options": [
+      {
+        "text": "fibre optics sustained cable",
+        "correct": true
+      },
+      {
+        "text": "satellites had no glamour",
+        "correct": false
+      },
+      {
+        "text": "the oceans no longer mattered",
+        "correct": false
+      },
+      {
+        "text": "Britain lost all cable interest",
+        "correct": false
+      }
+    ],
+    "explanation": "The chapter says fibre optics guaranteed the continuation of cable, leading to major undersea cable links even in the satellite age."
+  },
+  {
+    "id": "q36",
+    "type": "matching",
+    "title": "Satellite politics and education",
+    "source": "Reading pp. 253-255",
+    "prompt": "Match each item to its significance in satellite policy or education.",
+    "pairs": [
+      {
+        "left": "Intersputnik",
+        "right": "The Soviet alternative to Intelsat, created in 1968."
+      },
+      {
+        "left": "Tonga slots",
+        "right": "Seven orbital slots allotted in 1985 and leased to corporate interests."
+      },
+      {
+        "left": "SITE",
+        "right": "An Indian educational satellite experiment covering health, hygiene and agriculture."
+      },
+      {
+        "left": "Ariane",
+        "right": "The European Space Agency's rocket launched in 1979."
+      },
+      {
+        "left": "Television Without Frontiers",
+        "right": "A 1989 directive restating European television integration principles."
+      }
+    ],
+    "explanation": "Satellites were never just hardware: they involved Cold War alternatives, orbital rights, education, European integration and commercial leasing."
+  },
+  {
+    "id": "q37",
+    "type": "mcq",
+    "title": "Orbital scarcity",
+    "source": "Reading p. 253",
+    "prompt": "Why did orbital slots become politically and economically important?",
+    "options": [
+      {
+        "text": "they were finite",
+        "correct": true
+      },
+      {
+        "text": "they were freely unlimited",
+        "correct": false
+      },
+      {
+        "text": "they were only for newspapers",
+        "correct": false
+      },
+      {
+        "text": "they had no terrestrial reach",
+        "correct": false
+      }
+    ],
+    "explanation": "Geo-stationary slots were limited, had footprints on Earth, and therefore became objects of bargaining and pricing."
+  },
+  {
+    "id": "q38",
+    "type": "matching",
+    "title": "Cable policy in the United States",
+    "source": "Reading pp. 258-259",
+    "prompt": "Match each FCC/legal moment to its meaning for cable television.",
+    "pairs": [
+      {
+        "left": "1959 FCC ruling",
+        "right": "Cable was neither broadcasting nor common carriage, so the FCC claimed no jurisdiction."
+      },
+      {
+        "left": "1968 intervention",
+        "right": "Cable was restricted from importing distant signals into local service areas."
+      },
+      {
+        "left": "1972 compromise",
+        "right": "Cable systems could import at least two distant signals but remained regulated."
+      },
+      {
+        "left": "1977 court ruling",
+        "right": "Protective restraints on cable were declared invalid."
+      },
+      {
+        "left": "Spectrum scarcity argument",
+        "right": "Some lawyers argued it should no longer justify broadcast regulation."
+      }
+    ],
+    "explanation": "Cable policy moved unevenly from uncertainty to intervention, compromise and deregulation, while old rationales for broadcasting regulation were questioned."
+  },
+  {
+    "id": "q39",
+    "type": "mcq",
+    "title": "HBO and national cable",
+    "source": "Reading p. 255",
+    "prompt": "What was the significance of HBO linking its future to RCA's Satcom I in 1976?",
+    "options": [
+      {
+        "text": "national cable distribution",
+        "correct": true
+      },
+      {
+        "text": "end of all sports channels",
+        "correct": false
+      },
+      {
+        "text": "return to local-only cable",
+        "correct": false
+      },
+      {
+        "text": "collapse of Hollywood deals",
+        "correct": false
+      }
+    ],
+    "explanation": "By using Satcom I, HBO gained national distribution capabilities comparable to the big networks but at a fraction of the cost."
+  },
+  {
+    "id": "q40",
+    "type": "matching",
+    "title": "Viewdata family",
+    "source": "Reading pp. 259-261",
+    "prompt": "Match each viewdata or videotex term to the best description.",
+    "pairs": [
+      {
+        "left": "Teletext",
+        "right": "Broadcast pages of words and graphics to a television screen using spare broadcast lines."
+      },
+      {
+        "left": "Videotex",
+        "right": "Computer-stored information delivered by telephone line or cable to a screen or terminal."
+      },
+      {
+        "left": "Prestel",
+        "right": "The British Post Office's 1979 operational Viewdata system."
+      },
+      {
+        "left": "Ceefax and Oracle",
+        "right": "Broadcast-based systems in Britain."
+      },
+      {
+        "left": "Telidon",
+        "right": "A Canadian system offering visual as well as verbal information."
+      }
+    ],
+    "explanation": "Viewdata anticipated Internet questions: access, navigation, active users, information providers and the boundary between publishing and broadcasting."
+  },
+  {
+    "id": "q41",
+    "type": "sequence",
+    "title": "From viewdata to mobile",
+    "source": "Reading pp. 260-263",
+    "prompt": "Arrange these consumer-media milestones in chronological order.",
+    "items": [
+      "VCRs and video discs are first put on sale after years of experiments.",
+      "The British Post Office offers Prestel as an operational Viewdata system.",
+      "The first laser disc is on sale in America for Christmas.",
+      "The first mobile telephone system is licensed in the United States.",
+      "Sony's small camcorder appears as a video cassette spin-off.",
+      "The first SMS is sent from a personal computer to a mobile phone."
+    ],
+    "explanation": "The sequence tracks consumer media from home video to interactive information systems and then to mobile communication."
+  },
+  {
+    "id": "q42",
+    "type": "mcq",
+    "title": "HDTV delay",
+    "source": "Reading pp. 259-260",
+    "prompt": "Why did high-definition television fail to break through at that moment, despite strong demonstrations?",
+    "options": [
+      {
+        "text": "costs, standards and analogue limits",
+        "correct": true
+      },
+      {
+        "text": "no interest from Japanese engineers",
+        "correct": false
+      },
+      {
+        "text": "only one global spectrum already existed",
+        "correct": false
+      },
+      {
+        "text": "digital switching was already instant",
+        "correct": false
+      }
+    ],
+    "explanation": "HDTV faced heavy investment, spectrum allocation, different national standards and the problem that its proposed technology was analogue while the future was moving digital."
+  },
+  {
+    "id": "q43",
+    "type": "matching",
+    "title": "Video and mobile concepts",
+    "source": "Reading pp. 261-263",
+    "prompt": "Match each technology or idea to its role in the chapter.",
+    "pairs": [
+      {
+        "left": "Time shifting",
+        "right": "Recording a TV programme to watch later on the home screen."
+      },
+      {
+        "left": "VCR growth",
+        "right": "By 1990, about 70 percent of American homes had a VCR."
+      },
+      {
+        "left": "Camcorder",
+        "right": "Sony's 1984 small video camera, described as a TV version of the Polaroid."
+      },
+      {
+        "left": "Picturephone",
+        "right": "AT&T's analogue videophone that failed to secure enough customers."
+      },
+      {
+        "left": "SMS",
+        "right": "Short text messages that helped turn mobile phones into youth communication tools."
+      }
+    ],
+    "explanation": "The chapter compares technologies that boomed, technologies that stalled, and mobile services whose social uses were not initially foreseen."
+  },
+  {
+    "id": "q44",
+    "type": "mcq",
+    "title": "Mobile boom",
+    "source": "Reading pp. 262-263",
+    "prompt": "What became a major youth-oriented mobile service after its first 1992 message on the Vodafone network?",
+    "options": [
+      {
+        "text": "SMS",
+        "correct": true
+      },
+      {
+        "text": "Prestel",
+        "correct": false
+      },
+      {
+        "text": "Telstar",
+        "correct": false
+      },
+      {
+        "text": "Ceefax",
+        "correct": false
+      }
+    ],
+    "explanation": "SMS made short written messages central to mobile culture, with 160-character messages and new symbolic habits."
+  },
+  {
+    "id": "q45",
+    "type": "matching",
+    "title": "Internet concepts",
+    "source": "Reading pp. 263-266",
+    "prompt": "Match each Internet concept or figure to its significance.",
+    "pairs": [
+      {
+        "left": "ARPANET",
+        "right": "A government-funded network linking hi-tech universities and research institutions."
+      },
+      {
+        "left": "Packet switching",
+        "right": "Breaking messages into pieces that travel through nodes and are reassembled."
+      },
+      {
+        "left": "Mosaic",
+        "right": "Browsing software described in 1993 as a first window into cyberspace."
+      },
+      {
+        "left": "Tim Berners-Lee",
+        "right": "Devised the World Wide Web at CERN in 1989."
+      },
+      {
+        "left": "Neil Postman",
+        "right": "Coined technopoly to criticize surrendering culture to technology."
+      },
+      {
+        "left": "William Winston",
+        "right": "Saw technological convergence as a path toward more power to the people."
+      }
+    ],
+    "explanation": "The Internet section balances architecture, software, institutions, optimism and criticism rather than treating the Web as magic from nowhere."
+  },
+  {
+    "id": "q46",
+    "type": "sequence",
+    "title": "Internet timeline",
+    "source": "Reading pp. 263-265",
+    "prompt": "Arrange these Internet milestones in order.",
+    "items": [
+      "ARPANET is set up as a limited research network.",
+      "Interface message processors arrive at UCLA.",
+      "ARPANET adapts TCP/IP protocols.",
+      "Tim Berners-Lee devises the World Wide Web at CERN.",
+      "Mosaic gives public users a window into cyberspace.",
+      "Netscape Navigator becomes the dominant browser."
+    ],
+    "explanation": "The Internet's growth moves from military-academic networks to packet architecture, then to Web linking and popular browsing."
+  },
+  {
+    "id": "q47",
+    "type": "mcq",
+    "title": "Berners-Lee's Web",
+    "source": "Reading p. 265",
+    "prompt": "What principle did Tim Berners-Lee seek for the Web?",
+    "options": [
+      {
+        "text": "open and free",
+        "correct": true
+      },
+      {
+        "text": "owned by one broadcaster",
+        "correct": false
+      },
+      {
+        "text": "limited to defence labs",
+        "correct": false
+      },
+      {
+        "text": "closed to hyperlink use",
+        "correct": false
+      }
+    ],
+    "explanation": "Berners-Lee wanted the Web to remain non-proprietary, open and free. Hyperlinks then made wide linking across documents possible."
+  },
+  {
+    "id": "q48",
+    "type": "matching",
+    "title": "Millennium, globalization and verification",
+    "source": "Reading pp. 267-271",
+    "prompt": "Match each late-chapter concept to its best explanation.",
+    "pairs": [
+      {
+        "left": "Millennium Summit",
+        "right": "A 2000 United Nations gathering where extreme poverty and hunger led the goals."
+      },
+      {
+        "left": "9/11",
+        "right": "Treated by some journalists and historians as the real beginning of the new millennium."
+      },
+      {
+        "left": "Glocalization",
+        "right": "Roland Robertson's hybrid word requiring careful analysis of global and local forces."
+      },
+      {
+        "left": "Kai Hafez",
+        "right": "Argued from empirical data that no global public sphere had yet been established."
+      },
+      {
+        "left": "Halberstam's alarm",
+        "right": "Concern over allegation and assertion replacing older verification culture."
+      },
+      {
+        "left": "Social Life of Information",
+        "right": "Criticized the tunnel vision bred by information-driven technologies."
+      }
+    ],
+    "explanation": "The chapter refuses a simple digital triumph story: new media are placed beside poverty, terrorism, globalization debates and crises of verification."
+  },
+  {
+    "id": "q49",
+    "type": "fill",
+    "title": "Distance learning milestones",
+    "source": "Reading pp. 271-273 and Fig. 28",
+    "prompt": "Fill in the milestones of distance learning and educational convergence.",
+    "sentences": [
+      {
+        "before": "The British Open University enrolled its first degree students in ",
+        "after": ".",
+        "answers": [
+          "1971"
+        ]
+      },
+      {
+        "before": "Its hundred-thousandth student graduated in ",
+        "after": ".",
+        "answers": [
+          "1989"
+        ]
+      },
+      {
+        "before": "The Commonwealth of Learning was created in ",
+        "after": " with its head office in Vancouver.",
+        "answers": [
+          "1989"
+        ]
+      },
+      {
+        "before": "Japan's University of the Air, founded in 1984, used ",
+        "after": "'s second educational channel.",
+        "answers": [
+          "NHK"
+        ]
+      }
+    ],
+    "explanation": "Figure 28 and the text show education finding allies in radio, television, Open University broadcasting, distance learning and eventually the Web."
+  },
+  {
+    "id": "q50",
+    "type": "mcq",
+    "title": "Boss question: chapter thesis",
+    "source": "Reading pp. 237-274",
+    "prompt": "Which statement best captures the chapter's overall view of media convergence?",
+    "options": [
+      {
+        "text": "a nonlinear social process",
+        "correct": true
+      },
+      {
+        "text": "a clean victory of one device over all earlier media",
+        "correct": false
+      },
+      {
+        "text": "a purely technical story without institutions or markets",
+        "correct": false
+      },
+      {
+        "text": "a single Internet climax that ends media history",
+        "correct": false
+      }
+    ],
+    "explanation": "The chapter's big lesson is that convergence is unfinished and uneven. It involves technologies, industries, policies, markets, education, culture, language, inequality and imagination at the same time. Tiny boss defeated 🐉."
+  }
+];
+let order = [], pos = 0, score = 0, round = 1, answered = false;
+let states = {};
+const QUIZ_SECONDS = 40 * 60;
+const RETRY_SECONDS = 50 * 60;
+let activeQuizSeconds = QUIZ_SECONDS;
+let remainingSeconds = activeQuizSeconds;
+let timerHandle = null;
+let attemptSubmitted = false;
+let currentAttemptRecord = null;
+let navigationGuardActive = false;
+let guardToastTimer = null;
+let attemptDeadlineTs = null;
+let restoringActiveAttempt = false;
+let practiceMode = false;
+let retryMode = false;
+let dragState = { selected:null, placements:{} };
+let currentDD = null;
+let ddDrag = null;
+let suppressDDClick = false;
+const STORE_PREFIX = 'media_convergences_ch7_mastery_40_50_v1_';
+const elCard = document.getElementById('card'), elQIdx = document.getElementById('qIdx'), elQTotal = document.getElementById('qTotal'), elScore = document.getElementById('score'), elRound = document.getElementById('round'), elBest = document.getElementById('best'), elCompleted = document.getElementById('completed'), elProg = document.getElementById('progress'), elJump = document.getElementById('jump'), elQuizBar = document.getElementById('quizBar'), elProgressTrack = document.getElementById('progressTrack'), elTimer = document.getElementById('timer'), elTimerPill = document.getElementById('timerPill');
+elQTotal.textContent = BANK.length;
+function shuffle(arr) { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
+function escapeHTML(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function norm(s) { return String(s||'').toLowerCase().replace(/[.,;:!?()[\]{}"']/g,'').replace(/[-‐‑‒–—]/g,' ').replace(/\s+/g,' ').trim(); }
+function lsGet(k) { try { return localStorage.getItem(k); } catch(e) { return null; } }
+function lsSet(k,v) { try { localStorage.setItem(k,v); } catch(e) {} }
+function lsDel(k) { try { localStorage.removeItem(k); } catch(e) {} }
+
+function showGuardToast(message='Quiz attempt protected. Finish or submit this attempt first.') {
+  let toast = document.getElementById('guardToast');
+  if(!toast){
+    toast = document.createElement('div');
+    toast.id = 'guardToast';
+    toast.className = 'guard-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.classList.add('show');
+  if(guardToastTimer) clearTimeout(guardToastTimer);
+  guardToastTimer = setTimeout(()=>toast.classList.remove('show'), 2200);
+}
+function pushGuardState() {
+  try { history.pushState({quizAttemptGuard:true, t:Date.now()}, '', location.href); } catch(e) {}
+}
+function enableNavigationGuard() {
+  navigationGuardActive = true;
+  pushGuardState();
+  pushGuardState();
+}
+function disableNavigationGuard() {
+  navigationGuardActive = false;
+}
+function getActiveAttempt() {
+  try { return JSON.parse(lsGet(STORE_PREFIX+'activeAttempt') || 'null'); } catch(e) { return null; }
+}
+function saveActiveAttempt() {
+  if(!navigationGuardActive || attemptSubmitted || !order.length) return;
+  const active = {
+    active:true,
+    order:order.slice(),
+    pos,
+    score,
+    round,
+    states,
+    remainingSeconds:Math.max(0, remainingSeconds),
+    deadlineTs:attemptDeadlineTs,
+    timerSeconds:activeQuizSeconds,
+    savedAt:Date.now()
+  };
+  lsSet(STORE_PREFIX+'activeAttempt', JSON.stringify(active));
+}
+function clearActiveAttempt() { lsDel(STORE_PREFIX+'activeAttempt'); }
+window.addEventListener('beforeunload', function(e) {
+  if(navigationGuardActive && !attemptSubmitted){
+    saveActiveAttempt();
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  }
+});
+window.addEventListener('pagehide', function() {
+  if(navigationGuardActive && !attemptSubmitted) saveActiveAttempt();
+});
+window.addEventListener('popstate', function(e) {
+  if(navigationGuardActive && !attemptSubmitted){
+    pushGuardState();
+    window.setTimeout(pushGuardState, 0);
+    showGuardToast('Back/forward is blocked during this active quiz attempt.');
+    saveActiveAttempt();
+  }
+});
+function getAttemptHistory() { try { return JSON.parse(lsGet(STORE_PREFIX+'history') || '[]'); } catch(e) { return []; } }
+function saveAttemptHistory(arr) { lsSet(STORE_PREFIX+'history', JSON.stringify(arr)); }
+function getCompleted() { const history = getAttemptHistory(); if(history.length) return history.length; return parseInt(lsGet(STORE_PREFIX+'completed') || '0', 10); }
+function appendAttemptRecord(record) { const history = getAttemptHistory(); history.push(record); saveAttemptHistory(history); lsSet(STORE_PREFIX+'completed', String(history.length)); return history.length; }
+function formatAttemptDate(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString([], {year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+  } catch(e) { return 'saved attempt'; }
+}
+function renderAttemptHistoryList(history) {
+  if(!history.length) return '';
+  const rows = history.map((a,i)=>{
+    const pct = Math.round((a.score / a.total) * 100);
+    const label = a.timeExpired ? 'auto-submitted, time up' : 'submitted';
+    const wrongCount = Array.isArray(a.wrongIds) ? a.wrongIds.length : Math.max(0, (a.total || 0) - (a.score || 0));
+    return `<li><span><strong>Attempt ${i+1}</strong><br><span class="attempt-meta">${escapeHTML(formatAttemptDate(a.submittedAt))} · ${label} · wrong marks: ${wrongCount}</span></span><span class="attempt-score">${a.score} / ${a.total} · ${pct}%</span></li>`;
+  }).join('');
+  return `<section class="attempt-history"><h3>Previous attempts</h3><ol class="attempt-list">${rows}</ol></section>`;
+}
+function updateSavedStats() { elBest.textContent = lsGet(STORE_PREFIX+'best') || '—'; elCompleted.textContent = String(getCompleted()); }
+function formatTime(seconds) { const m=Math.floor(seconds/60); const s=seconds%60; return `${m}:${String(s).padStart(2,'0')}`; }
+function mixRGB(a,b,t){ const m=(x,y)=>Math.round(x+(y-x)*t); return `rgb(${m(a[0],b[0])}, ${m(a[1],b[1])}, ${m(a[2],b[2])})`; }
+function updateTimerDisplay() {
+  const safeSeconds = Math.max(0, remainingSeconds);
+  elTimer.textContent = formatTime(safeSeconds);
+  elTimerPill.style.setProperty('--timer-progress', String(safeSeconds / activeQuizSeconds));
+  elTimerPill.classList.remove('warning','urgent');
+  elTimerPill.style.background='';
+  elTimerPill.style.borderColor='';
+  elTimerPill.style.color='';
+  if (safeSeconds <= 10) {
+    const t = (10 - safeSeconds) / 10;
+    elTimerPill.classList.add('urgent');
+    elTimerPill.style.background = mixRGB([255, 205, 205], [236, 169, 169], t);
+    elTimerPill.style.borderColor = mixRGB([255, 95, 95], [204, 0, 0], t);
+    elTimerPill.style.color = mixRGB([255, 40, 40], [170, 0, 0], t);
+  } else if (safeSeconds <= 60) {
+    elTimerPill.classList.add('warning');
+  }
+}
+function stopTimer() { if(timerHandle){ clearInterval(timerHandle); timerHandle=null; } elTimerPill.classList.remove('running'); }
+function syncRemainingFromDeadline() {
+  if(attemptDeadlineTs){
+    remainingSeconds = Math.max(0, Math.ceil((attemptDeadlineTs - Date.now()) / 1000));
+  }
+}
+function startTimer(reset=true) {
+  stopTimer();
+  elTimerPill.style.setProperty('--timer-duration', activeQuizSeconds + 's');
+  if(reset || !attemptDeadlineTs){
+    remainingSeconds = activeQuizSeconds;
+    attemptDeadlineTs = Date.now() + activeQuizSeconds * 1000;
+  } else {
+    syncRemainingFromDeadline();
+  }
+  updateTimerDisplay();
+  elTimerPill.classList.remove('running');
+  void elTimerPill.offsetWidth;
+  elTimerPill.classList.add('running');
+  timerHandle = setInterval(()=>{
+    syncRemainingFromDeadline();
+    updateTimerDisplay();
+    saveActiveAttempt();
+    if(remainingSeconds <= 0){ stopTimer(); submitAttempt(true); }
+  }, 1000);
+}
+function setQuizChrome(show) { elQuizBar.classList.toggle('hidden', !show); elJump.classList.toggle('hidden', !show); elProgressTrack.classList.toggle('hidden', !show); }
+function showOpening(message='') {
+  disableNavigationGuard();
+  clearActiveAttempt();
+  stopTimer();
+  practiceMode = false;
+  retryMode = false;
+  activeQuizSeconds = QUIZ_SECONDS;
+  attemptDeadlineTs = null;
+  remainingSeconds = activeQuizSeconds;
+  updateTimerDisplay();
+  attemptSubmitted = false;
+  currentAttemptRecord = null;
+  setQuizChrome(false);
+  updateSavedStats();
+  elQTotal.textContent = BANK.length;
+  if(!BANK.length){
+    elCard.innerHTML = `<div class="opening"><h2>Template ready</h2><p>This file is the quiz shell. Give it to another AI together with new slides/readings and ask it to replace the <code>BANK</code> array plus metadata using the instructions embedded at the top of the file.</p><div class="attempt-badge">No active questions loaded yet</div></div>`;
+    return;
+  }
+  const history = getAttemptHistory();
+  const historyList = renderAttemptHistoryList(history);
+  const practiceButton = history.length ? `<button class="btn ghost" onclick="startIncorrectPractice()">Practice only the incorrect questions again</button>` : '';
+  const messageBox = message ? `<div id="openingMsg" class="feedback info practice-message" style="display:block">${escapeHTML(message)}</div>` : `<div id="openingMsg" class="practice-message"></div>`;
+  elCard.innerHTML = `<div class="opening"><h2>Ready to take the quiz?</h2><p>This set has ${BANK.length} questions. Use the 40-minute official quiz for saved attempts, or use the 50-minute retry practice page to reset any question and solve it again.</p><div class="attempt-badge">Completed attempts: <span id="openingCompleted">${getCompleted()}</span></div>${historyList}<div class="opening-actions"><button class="btn" onclick="startRound()">40-minute quiz</button><button class="btn ghost" onclick="startRetryRound()">50-minute retry practice</button>${practiceButton}</div>${messageBox}</div>`;
+}
+
+function getLatestWrongQuestionIds() {
+  const history = getAttemptHistory();
+  if(!history.length) return [];
+  const latest = history[history.length - 1];
+  return Array.isArray(latest.wrongIds) ? latest.wrongIds : [];
+}
+function showOpeningMessage(message, type='info') {
+  const box = document.getElementById('openingMsg');
+  if(box){
+    box.className = `feedback ${type} practice-message`;
+    box.style.display = 'block';
+    box.textContent = message;
+  } else {
+    showOpening(message);
+  }
+}
+function startIncorrectPractice() {
+  const wrongIds = getLatestWrongQuestionIds();
+  if(!wrongIds.length){
+    showOpeningMessage("You've got no wrong mark!", 'good');
+    return;
+  }
+  const wrongIndexes = wrongIds.map(id => BANK.findIndex(q => q.id === id)).filter(i => i >= 0);
+  if(!wrongIndexes.length){
+    showOpeningMessage("You've got no wrong mark!", 'good');
+    return;
+  }
+  disableNavigationGuard();
+  clearActiveAttempt();
+  stopTimer();
+  practiceMode = true;
+  retryMode = false;
+  activeQuizSeconds = QUIZ_SECONDS;
+  attemptSubmitted = false;
+  currentAttemptRecord = null;
+  order = wrongIndexes;
+  pos = 0;
+  score = 0;
+  states = {};
+  elScore.textContent = '0';
+  updateSavedStats();
+  setQuizChrome(true);
+  elQuizBar.classList.add('hidden');
+  renderJump();
+  renderQuestion();
+}
+
+function startRound() {
+  practiceMode = false;
+  retryMode = false;
+  activeQuizSeconds = QUIZ_SECONDS;
+  setQuizChrome(true);
+  order = shuffle(BANK.map((_,i)=>i));
+  pos=0;
+  score=0;
+  states={};
+  attemptSubmitted=false;
+  currentAttemptRecord=null;
+  round=getCompleted()+1;
+  elScore.textContent='0';
+  elRound.textContent=round;
+  updateSavedStats();
+  enableNavigationGuard();
+  startTimer(true);
+  saveActiveAttempt();
+  renderJump();
+  renderQuestion();
+}
+function startRetryRound() {
+  disableNavigationGuard();
+  clearActiveAttempt();
+  stopTimer();
+  practiceMode = false;
+  retryMode = true;
+  activeQuizSeconds = RETRY_SECONDS;
+  setQuizChrome(true);
+  order = BANK.map((_,i)=>i);
+  pos = 0;
+  score = 0;
+  states = {};
+  attemptSubmitted = false;
+  currentAttemptRecord = null;
+  round = getCompleted()+1;
+  elScore.textContent='0';
+  elRound.textContent=round;
+  updateSavedStats();
+  startTimer(true);
+  renderJump();
+  renderQuestion();
+}
+function restoreActiveAttempt(active) {
+  restoringActiveAttempt = true;
+  setQuizChrome(true);
+  practiceMode = false;
+  retryMode = false;
+  activeQuizSeconds = active.timerSeconds || QUIZ_SECONDS;
+  order = Array.isArray(active.order) && active.order.length ? active.order : shuffle(BANK.map((_,i)=>i));
+  pos = Number.isInteger(active.pos) ? Math.max(0, Math.min(active.pos, order.length-1)) : 0;
+  states = active.states || {};
+  score = Object.values(states).filter(s=>s.answered&&s.correct).length;
+  round = active.round || (getCompleted()+1);
+  attemptSubmitted = false;
+  currentAttemptRecord = null;
+  attemptDeadlineTs = active.deadlineTs || (Date.now() + Math.max(0, active.remainingSeconds || activeQuizSeconds) * 1000);
+  syncRemainingFromDeadline();
+  elScore.textContent=score;
+  elRound.textContent=round;
+  updateSavedStats();
+  enableNavigationGuard();
+  startTimer(false);
+  renderJump();
+  renderQuestion();
+  showGuardToast('Your ongoing attempt was restored and protected.');
+  restoringActiveAttempt = false;
+  if(remainingSeconds <= 0) submitAttempt(true);
+}
+function bootQuiz() {
+  const active = getActiveAttempt();
+  if(active && active.active && !active.submitted && Array.isArray(active.order) && active.order.length){
+    restoreActiveAttempt(active);
+  } else {
+    showOpening();
+  }
+}
+function renderJump() { elJump.innerHTML=''; order.forEach((qi,i)=>{ const q=BANK[qi]; const st=states[q.id]; const b=document.createElement('button'); b.textContent=i+1; b.className=(i===pos?'current ':'')+(st?.answered?(st.correct?'done':'miss'):''); b.onclick=()=>{pos=i; saveActiveAttempt(); renderQuestion();}; elJump.appendChild(b); }); }
+function currentQ() { return BANK[order[pos]]; }
+function lockedState(item){ return states[item.id]?.answered ? states[item.id] : null; }
+function lockNotice(item){ const st=states[item.id]; if(!st?.answered) return; feedback((st.correct?'Correct. ':'Locked. ')+item.explanation, st.correct?'good':(st.revealed?'info':'bad')); }
+function renderQuestion() {
+  if(pos>=order.length) return retryMode ? finishRetryRound(false) : renderResult();
+  dragState={selected:null,placements:{}}; currentDD=null;
+  const item=currentQ();
+  answered=!!states[item.id]?.answered;
+  elQIdx.textContent=pos+1; elQTotal.textContent=order.length; elProg.style.width=(pos/order.length*100)+'%';
+  const tagMap={mcq:'Multiple Choice',matching:'Dropdown Match',sequence:'Drag & Order',fill:'Fill In'};
+  let html=`<div class="qnum">Question ${pos+1} of ${order.length}<span class="qtype-tag">${tagMap[item.type]}</span></div><p class="qtext">${item.prompt}</p><div class="source">${escapeHTML(item.source)} · ${escapeHTML(item.title)}</div>`;
+  if(item.type==='mcq') html+=renderMC_HTML(item); else if(item.type==='fill') html+=renderFill_HTML(item); else if(item.type==='matching') html+=renderSelectMatch_HTML(item); else html+=renderDD_HTML(item);
+  const resetControl = retryMode ? ` <button class="btn ghost retry-reset" onclick="resetCurrentQuestion()" aria-label="Reset this question to unanswered" title="Reset this question to unanswered">&#8635;</button>` : '';
+  const rightControls = practiceMode
+    ? `<button class="btn ghost" onclick="showOpening()">Return to opening page</button>`
+    : `<button class="btn" onclick="submitAttempt()">${retryMode ? 'Finish attempt' : 'Submit'}</button>`;
+  html += `<div class="feedback" id="fb"></div><div class="actions submit-row" id="acts"><div><button class="btn ghost arrow" onclick="prevQ()" aria-label="Previous question" title="Previous question">←</button> <button class="btn ghost arrow" onclick="nextQ()" aria-label="Next question" title="Next question">→</button>${resetControl}${item.type==='matching'?'':` <button class="btn ghost" onclick="showAnswer()" ${answered?'disabled':''}>Show answer</button>`}</div><div>${rightControls}</div></div>`;
+  elCard.innerHTML=html;
+  if(item.type==='mcq') attachMC(item); else if(item.type==='fill') attachFill(item); else if(item.type==='matching') attachSelectMatch(item); else attachDD(item);
+  lockNotice(item);
+  renderJump();
+  saveActiveAttempt();
+}
+function renderMC_HTML(item) {
+  const st=states[item.id];
+  const idxs=st?.optionOrder || shuffle(item.options.map((_,i)=>i));
+  item._shuf=idxs;
+  return `<div class="options">${idxs.map((orig,i)=>`<button class="opt" data-i="${i}"><span class="marker">${String.fromCharCode(65+i)}</span><span class="optText">${escapeHTML(item.options[orig].text)}</span></button>`).join('')}</div><p class="small">Wrong choices are plausible exam traps. Read the wording slowly.</p>`;
+}
+function attachMC(item) {
+  const st=states[item.id];
+  if(st?.answered){
+    document.querySelectorAll('.opt').forEach((b,k)=>{
+      const orig=item._shuf[k];
+      b.disabled=true;
+      if(item.options[orig].correct) b.classList.add('reveal');
+      if(st.selectedOrig===orig) b.classList.add(st.correct?'correct':'wrong');
+    });
+    return;
+  }
+  document.querySelectorAll('.opt').forEach(btn=>{ btn.onclick=()=>{ if(answered)return; answered=true; const shownIndex=+btn.dataset.i; const orig=item._shuf[shownIndex]; const ok=!!item.options[orig].correct; document.querySelectorAll('.opt').forEach((b,k)=>{b.disabled=true; if(item.options[item._shuf[k]].correct)b.classList.add('reveal');}); btn.classList.add(ok?'correct':'wrong'); mark(ok,{selectedOrig:orig, optionOrder:item._shuf.slice()}); feedback((ok?'Correct. ':'Not quite. ')+item.explanation, ok?'good':'bad'); }; });
+}
+function renderFill_HTML(item) { return `<div class="fillbox">${item.sentences.map((s,i)=>`<label class="fill-row">${escapeHTML(s.before)}<input data-fill="${i}" autocomplete="off" autocapitalize="none" spellcheck="false" />${escapeHTML(s.after)}</label>`).join('')}</div><p class="small">Type the missing word or phrase. Correct blanks lock automatically.</p>`; }
+function attachFill(item) {
+  const st=states[item.id];
+  const inputs=[...document.querySelectorAll('input[data-fill]')];
+  if(st?.values){
+    inputs.forEach((inp,i)=>{
+      inp.value = st.values?.[i] || '';
+      if(st.locked?.[i] || st.answered){ inp.classList.add('correct'); inp.disabled=true; }
+    });
+  }
+  if(st?.answered){ return; }
+  inputs.forEach(inp=>{ inp.addEventListener('input', checkFill); });
+}
+function checkFill() {
+  const item=currentQ();
+  if(answered) return;
+  const inputs=[...document.querySelectorAll('input[data-fill]')];
+  const st = states[item.id] || {answered:false, correct:false, values:Array(item.sentences.length).fill(''), locked:Array(item.sentences.length).fill(false)};
+  st.values = st.values || Array(item.sentences.length).fill('');
+  st.locked = st.locked || Array(item.sentences.length).fill(false);
+  let allLocked=true;
+  let allFilled=true;
+  inputs.forEach(inp=>{
+    const idx=+inp.dataset.fill;
+    if(st.locked[idx]){ inp.disabled=true; inp.classList.add('correct'); return; }
+    st.values[idx]=inp.value;
+    const s=item.sentences[idx];
+    const ok=s.answers.some(a=>norm(a)===norm(inp.value));
+    if(ok){
+      st.locked[idx]=true;
+      inp.classList.add('correct');
+      inp.disabled=true;
+    } else {
+      inp.classList.remove('correct');
+    }
+    if(!st.locked[idx]) allLocked=false;
+    if(!inp.value.trim()) allFilled=false;
+  });
+  states[item.id]=st;
+  saveActiveAttempt();
+  if(st.locked.every(Boolean)){
+    answered=true;
+    mark(true,{values:st.values.slice(), locked:st.locked.slice()});
+    feedback('Correct. '+item.explanation,'good');
+  } else if(allFilled){
+    feedback('Keep going. Correct blanks lock green immediately; remaining blanks still need revision.','info');
+  }
+}
+
+function renderSelectMatch_HTML(item) {
+  const st=states[item.id];
+  const optionOrder = st?.optionOrder || shuffle(item.pairs.map((_,i)=>i));
+  item._matchOptions = optionOrder;
+  return `<div class="dd-hint">🌿 Choose the correct definition from each dropdown. When every row has a choice, press Check answers.</div><div class="select-match">${item.pairs.map((p,i)=>`<div class="select-row" data-row="${i}"><div class="select-term">${escapeHTML(p.left)}</div><select data-match="${i}"><option value="">Choose the best match...</option>${optionOrder.map(idx=>`<option value="${idx}">${escapeHTML(item.pairs[idx].right)}</option>`).join('')}</select></div>`).join('')}</div><div class="select-actions"><button class="btn" onclick="checkSelectMatch()" ${st?.answered?'disabled':''}>Check answers</button><button class="btn ghost" onclick="showAnswer()" ${st?.answered?'disabled':''}>Show answer</button></div><p class="small">No dragging now: term on the left, definition dropdown on the right. Tiny exam dojo, less finger acrobatics 🥢.</p>`;
+}
+function attachSelectMatch(item) {
+  const st=states[item.id];
+  const selects=[...document.querySelectorAll('select[data-match]')];
+  if(st?.answered){
+    selects.forEach(sel=>{
+      const termIndex=+sel.dataset.match;
+      sel.value=String(st.values?.[termIndex] ?? (st.revealed ? termIndex : ''));
+      sel.disabled=true;
+      const ok=st.rowResults?.[termIndex] ?? (st.revealed ? true : false);
+      sel.closest('.select-row').classList.add(ok?'correct':'wrong');
+    });
+    return;
+  }
+  selects.forEach(sel=>{
+    sel.addEventListener('change',()=>{
+      if(answered) return;
+      const allChosen=[...document.querySelectorAll('select[data-match]')].every(s=>s.value!=='');
+      if(allChosen) feedback('All rows have choices. Press Check answers to grade this set.','info');
+    });
+  });
+}
+function checkSelectMatch() {
+  const item=currentQ();
+  if(answered || item.type!=='matching') return;
+  const selects=[...document.querySelectorAll('select[data-match]')];
+  const allChosen=selects.every(s=>s.value!=='');
+  if(!allChosen){ feedback('Choose one definition for every term first.','info'); return; }
+  let allCorrect=true;
+  const values=[];
+  const rowResults=[];
+  selects.forEach(sel=>{
+    const row=sel.closest('.select-row');
+    const termIndex=+sel.dataset.match;
+    const chosenIndex=+sel.value;
+    const ok=termIndex===chosenIndex;
+    values[termIndex]=chosenIndex;
+    rowResults[termIndex]=ok;
+    row.classList.add(ok?'correct':'wrong');
+    if(!ok) allCorrect=false;
+    sel.disabled=true;
+  });
+  answered=true;
+  mark(allCorrect,{values, rowResults, optionOrder:item._matchOptions.slice()});
+  feedback((allCorrect?'Correct. ':'Not quite. ')+item.explanation, allCorrect?'good':'bad');
+}
+function setupDD(item) {
+  const st=states[item.id];
+  if(st?.ddSetup) return JSON.parse(JSON.stringify(st.ddSetup));
+  let cards, slots, slotOrder;
+  if(item.type==='matching'){
+    cards=item.pairs.map((p,i)=>({id:'c'+i,text:p.right,correctSlot:'s'+i})); slots=item.pairs.map((p,i)=>({id:'s'+i,label:p.left,multi:false})); slotOrder=shuffle(slots.map(s=>s.id));
+  } else {
+    cards=item.items.map((t,i)=>({id:'c'+i,text:t,correctSlot:'s'+i})); slots=item.items.map((_,i)=>({id:'s'+i,label:String(i+1),multi:false})); slotOrder=slots.map(s=>s.id);
+  }
+  return {cards,slots,slotOrder,cardOrder:shuffle(cards.map(c=>c.id)),type:item.type};
+}
+function renderDD_HTML(item) {
+  currentDD=setupDD(item);
+  const st=states[item.id];
+  if(st?.placements) dragState.placements={...st.placements};
+  const hint=item.type==='matching'
+    ? 'Drag a card into its matching slot. Drop a placed card back into Cards to remove it.'
+    : 'Drag a card into the correct numbered slot. Drop a placed card back into Cards to remove it.';
+  return `<div class="dd-hint">${hint}</div><div id="ddArea"></div>`;
+}
+function attachDD(item) {
+  renderDDArea(item);
+  const st=states[item.id];
+  if(st?.answered){
+    renderDDFeedback(st.rowResults || {});
+    document.querySelectorAll('.dd-card').forEach(card=>card.disabled=true);
+  }
+}
+function renderDDArea(item) {
+  const area=document.getElementById('ddArea');
+  let h='';
+  if(currentDD.type==='matching') h+=renderMatchSlots(); else h+=renderOrderSlots();
+  const inBank=currentDD.cardOrder.filter(cid=>!dragState.placements[cid]);
+  h+=`<div class="card-bank"><div class="card-bank-label">Cards (${inBank.length} left)</div><div class="card-bank-cards" data-bank="true">${inBank.length?inBank.map(cid=>{const c=currentDD.cards.find(x=>x.id===cid); const sel=dragState.selected===cid?' selected':''; return `<button class="dd-card${sel}" data-card="${cid}" draggable="false">${escapeHTML(c.text)}</button>`;}).join(''):'<span class="small">All placed.</span>'}</div></div>`;
+  area.innerHTML=h;
+  area.querySelectorAll('.dd-card').forEach(el=>{
+    el.addEventListener('pointerdown', e=>startCardDrag(e,item,el));
+    el.onclick=e=>{
+      e.stopPropagation();
+      if(suppressDDClick){ suppressDDClick=false; return; }
+      onCardClick(item,el.dataset.card);
+    };
+  });
+  area.querySelectorAll('[data-slot]').forEach(el=>{el.onclick=()=>onSlotClick(item,el.dataset.slot);});
+  autoCheckDD(item,false);
+}
+function renderMatchSlots() { return `<div class="match-list">${currentDD.slotOrder.map(sid=>{const slot=currentDD.slots.find(s=>s.id===sid); return `<div class="match-row"><div class="match-label">${escapeHTML(slot.label)}</div>${slotHTML(sid)}</div>`;}).join('')}</div>`; }
+function renderOrderSlots() { return `<div class="order-list">${currentDD.slotOrder.map(sid=>{const slot=currentDD.slots.find(s=>s.id===sid); return `<div class="order-row"><div class="order-num">${slot.label}</div>${slotHTML(sid)}</div>`;}).join('')}</div>`; }
+function slotHTML(sid) {
+  const cardId=Object.keys(dragState.placements).find(cid=>dragState.placements[cid]===sid);
+  if(cardId){
+    const c=currentDD.cards.find(x=>x.id===cardId);
+    return `<div class="slot-target has-card" data-slot="${sid}"><button class="dd-card" data-card="${cardId}" draggable="false">${escapeHTML(c.text)}</button></div>`;
+  }
+  return `<div class="slot-target" data-slot="${sid}"><span class="placeholder">drop here</span></div>`;
+}
+function onCardClick(item,cardId) {
+  if(answered)return;
+  if(dragState.placements[cardId]){
+    delete dragState.placements[cardId];
+    dragState.selected=null;
+  } else {
+    dragState.selected=(dragState.selected===cardId)?null:cardId;
+  }
+  renderDDArea(item);
+  saveActiveAttempt();
+}
+function onSlotClick(item,slotId) {
+  if(answered||!dragState.selected)return;
+  placeCardInSlot(item, dragState.selected, slotId);
+}
+function placeCardInSlot(item, cardId, slotId) {
+  if(answered)return;
+  Object.keys(dragState.placements).forEach(cid=>{
+    if(cid===cardId || dragState.placements[cid]===slotId) delete dragState.placements[cid];
+  });
+  dragState.placements[cardId]=slotId;
+  dragState.selected=null;
+  renderDDArea(item);
+  saveActiveAttempt();
+}
+function returnCardToBank(item, cardId) {
+  if(answered)return;
+  delete dragState.placements[cardId];
+  dragState.selected=null;
+  renderDDArea(item);
+  saveActiveAttempt();
+}
+function startCardDrag(e,item,el) {
+  if(answered || (e.pointerType==='mouse' && e.button!==0)) return;
+  e.preventDefault();
+  const rect=el.getBoundingClientRect();
+  ddDrag={
+    item,
+    cardId:el.dataset.card,
+    sourceEl:el,
+    pointerId:e.pointerId,
+    startX:e.clientX,
+    startY:e.clientY,
+    offsetX:e.clientX-rect.left,
+    offsetY:e.clientY-rect.top,
+    rect,
+    moved:false,
+    ghost:null
+  };
+  el.classList.add('drag-source');
+  try { el.setPointerCapture(e.pointerId); } catch(err) {}
+  el.addEventListener('pointermove', onCardDragMove);
+  el.addEventListener('pointerup', onCardDragEnd);
+  el.addEventListener('pointercancel', onCardDragCancel);
+}
+function ensureDragGhost() {
+  if(!ddDrag || ddDrag.ghost) return;
+  const ghost=ddDrag.sourceEl.cloneNode(true);
+  ghost.classList.remove('selected','correct','wrong');
+  ghost.classList.add('dd-drag-ghost');
+  ghost.setAttribute('aria-hidden','true');
+  ghost.style.width=ddDrag.rect.width+'px';
+  ghost.style.minHeight=ddDrag.rect.height+'px';
+  document.body.appendChild(ghost);
+  ddDrag.ghost=ghost;
+}
+function onCardDragMove(e) {
+  if(!ddDrag || e.pointerId!==ddDrag.pointerId) return;
+  const dx=e.clientX-ddDrag.startX;
+  const dy=e.clientY-ddDrag.startY;
+  if(!ddDrag.moved && Math.hypot(dx,dy)<4) return;
+  ddDrag.moved=true;
+  ensureDragGhost();
+  ddDrag.ghost.style.setProperty('--drag-x', (e.clientX-ddDrag.offsetX)+'px');
+  ddDrag.ghost.style.setProperty('--drag-y', (e.clientY-ddDrag.offsetY)+'px');
+  setActiveDDDropTarget(findDDDropTarget(e.clientX,e.clientY));
+}
+function onCardDragEnd(e) {
+  if(!ddDrag || e.pointerId!==ddDrag.pointerId) return;
+  e.preventDefault();
+  const drag=ddDrag;
+  const target=drag.moved ? findDDDropTarget(e.clientX,e.clientY) : null;
+  cleanupDDDrag();
+  suppressDDClick=true;
+  window.setTimeout(()=>{ suppressDDClick=false; }, 0);
+  if(!drag.moved){
+    onCardClick(drag.item, drag.cardId);
+  } else if(target?.dataset?.slot){
+    placeCardInSlot(drag.item, drag.cardId, target.dataset.slot);
+  } else if(target?.dataset?.bank!==undefined){
+    returnCardToBank(drag.item, drag.cardId);
+  }
+}
+function onCardDragCancel() {
+  cleanupDDDrag();
+  suppressDDClick=true;
+  window.setTimeout(()=>{ suppressDDClick=false; }, 0);
+}
+function cleanupDDDrag() {
+  if(!ddDrag) return;
+  const el=ddDrag.sourceEl;
+  el.classList.remove('drag-source');
+  el.removeEventListener('pointermove', onCardDragMove);
+  el.removeEventListener('pointerup', onCardDragEnd);
+  el.removeEventListener('pointercancel', onCardDragCancel);
+  if(ddDrag.ghost) ddDrag.ghost.remove();
+  document.querySelectorAll('.drop-active').forEach(node=>node.classList.remove('drop-active'));
+  ddDrag=null;
+}
+function findDDDropTarget(x,y) {
+  const ghost=ddDrag?.ghost;
+  if(ghost) ghost.style.display='none';
+  const el=document.elementFromPoint(x,y);
+  if(ghost) ghost.style.display='';
+  return el?.closest?.('[data-slot], [data-bank]') || null;
+}
+function setActiveDDDropTarget(target) {
+  document.querySelectorAll('.drop-active').forEach(node=>node.classList.remove('drop-active'));
+  if(target) target.classList.add('drop-active');
+}
+function autoCheckDD(item,force) { if(!currentDD||answered)return; const allPlaced=currentDD.cards.every(c=>dragState.placements[c.id]); if(!allPlaced&&!force)return; const results={}; let count=0; currentDD.cards.forEach(c=>{const ok=dragState.placements[c.id]===c.correctSlot; results[c.id]=ok; if(ok)count++;}); const all=count===currentDD.cards.length; if(allPlaced){ answered=true; mark(all,{placements:{...dragState.placements}, rowResults:results, ddSetup:JSON.parse(JSON.stringify(currentDD))}); renderDDFeedback(results); feedback((all?'Correct. ':'Not quite. ')+item.explanation, all?'good':'bad'); } }
+function renderDDFeedback(results) { document.querySelectorAll('.slot-target').forEach(slot=>{ const card=slot.querySelector('.dd-card'); if(card){ const ok=!!results[card.dataset.card]; slot.classList.add(ok?'correct':'wrong'); card.classList.add(ok?'correct':'wrong'); card.disabled=true; } }); }
+function mark(ok, data={}) { const item=currentQ(); states[item.id]={...(states[item.id]||{}), answered:true, correct:ok, ...data}; answered=true; document.querySelectorAll('button[onclick="showAnswer()"]').forEach(btn=>{ btn.disabled=true; btn.setAttribute('aria-disabled','true'); }); score=Object.values(states).filter(s=>s.answered&&s.correct).length; elScore.textContent=score; renderJump(); saveActiveAttempt(); }
+function feedback(msg,type) { const f=document.getElementById('fb'); f.className='feedback '+type; f.textContent=msg; }
+function showAnswer() {
+  const item=currentQ();
+  if(answered) return;
+  if(item.type==='mcq'){
+    document.querySelectorAll('.opt').forEach((b,k)=>{ b.disabled=true; if(item.options[item._shuf[k]].correct)b.classList.add('reveal'); });
+    mark(false,{revealed:true, optionOrder:item._shuf.slice()});
+  } else if(item.type==='fill'){
+    const values=[];
+    document.querySelectorAll('input[data-fill]').forEach(inp=>{ const s=item.sentences[+inp.dataset.fill]; inp.value=s.answers[0]; values[+inp.dataset.fill]=inp.value; inp.classList.add('correct'); inp.disabled=true; });
+    mark(false,{revealed:true, values});
+  } else if(item.type==='matching'){
+    const values=[]; const rowResults=[];
+    document.querySelectorAll('select[data-match]').forEach(sel=>{ const idx=+sel.dataset.match; sel.value=String(idx); values[idx]=idx; rowResults[idx]=true; sel.disabled=true; sel.closest('.select-row').classList.add('correct'); });
+    mark(false,{revealed:true, values, rowResults, optionOrder:item._matchOptions.slice()});
+  } else {
+    currentDD.cards.forEach(c=>dragState.placements[c.id]=c.correctSlot);
+    const results={}; currentDD.cards.forEach(c=>results[c.id]=true);
+    renderDDArea(item);
+    document.querySelectorAll('.slot-target').forEach(slot=>slot.classList.add('correct'));
+    document.querySelectorAll('.dd-card').forEach(card=>{card.classList.add('correct'); card.disabled=true;});
+    mark(false,{revealed:true, placements:{...dragState.placements}, rowResults:results, ddSetup:JSON.parse(JSON.stringify(currentDD))});
+  }
+  answered=true;
+  feedback('Answer shown. This question is now locked for this attempt. '+item.explanation,'info');
+}
+function resetCurrentQuestion() {
+  if(!retryMode) return;
+  const item=currentQ();
+  delete states[item.id];
+  answered=false;
+  dragState={selected:null,placements:{}};
+  currentDD=null;
+  renderQuestion();
+}
+function prevQ() { pos=(pos-1+order.length)%order.length; saveActiveAttempt(); renderQuestion(); }
+function nextQ() { pos=(pos+1)%order.length; saveActiveAttempt(); renderQuestion(); }
+function showSubmittingScreen() {
+  setQuizChrome(false);
+  elCard.innerHTML = `<div class="loading-screen"><div class="loading-panel"><div class="wait-orb"><div class="wait-ring ring-a"></div><div class="wait-ring ring-b"></div><div class="wait-core"></div><div class="wait-dot"></div></div><div class="loading-title">Please wait...</div><div class="loading-sub">Submitting your quiz and saving this completion record in the browser.</div><div class="loading-mini">This will take about 5 seconds.</div></div></div>`;
+}
+function finishRetryRound(timeExpired=false) {
+  disableNavigationGuard();
+  clearActiveAttempt();
+  stopTimer();
+  attemptSubmitted=false;
+  const message = timeExpired ? '50-minute retry practice ended. No score was saved.' : 'Returned from 50-minute retry practice. No score was saved.';
+  showOpening(message);
+}
+function submitAttempt(timeExpired=false) {
+  if(attemptSubmitted) return;
+  if(retryMode){
+    attemptSubmitted=true;
+    finishRetryRound(timeExpired);
+    return;
+  }
+  attemptSubmitted=true;
+  disableNavigationGuard();
+  saveActiveAttempt();
+  stopTimer();
+  const total=order.length || BANK.length;
+  const answeredCount = Object.values(states).filter(s=>s.answered).length;
+  const wrongIds = order
+    .map(qi => BANK[qi]?.id)
+    .filter(id => states[id]?.answered && !states[id]?.correct);
+  currentAttemptRecord = {
+    submittedAt: new Date().toISOString(),
+    score: score,
+    total: total,
+    answeredCount: answeredCount,
+    timeExpired: !!timeExpired,
+    remainingSeconds: Math.max(0, remainingSeconds),
+    wrongIds: wrongIds
+  };
+  const best=parseInt(lsGet(STORE_PREFIX+'best')||'0',10);
+  if(score>best) lsSet(STORE_PREFIX+'best', String(score));
+  const completed = appendAttemptRecord(currentAttemptRecord);
+  currentAttemptRecord.completedCount = completed;
+  clearActiveAttempt();
+  updateSavedStats();
+  showSubmittingScreen();
+  window.setTimeout(()=>renderResult(false, timeExpired), 5000);
+}
+function renderResult(recordCompletion=false, timeExpired=false) {
+  stopTimer();
+  setQuizChrome(false);
+  elProg.style.width='100%';
+  const attempt = currentAttemptRecord || {
+    score: score,
+    total: order.length || BANK.length,
+    answeredCount: Object.values(states).filter(s=>s.answered).length,
+    timeExpired: !!timeExpired,
+    remainingSeconds: Math.max(0, remainingSeconds),
+    completedCount: getCompleted()
+  };
+  const total=attempt.total;
+  const pct=Math.round((attempt.score/total)*100);
+  const completed=attempt.completedCount || getCompleted();
+  const resultTitle = attempt.timeExpired ? 'Time is up — attempt submitted' : 'Attempt submitted';
+  const timeLine = attempt.timeExpired ? 'The 40-minute timer ended, the quiz was submitted automatically, and the attempt was locked.' : `Time remaining when submitted: <strong>${formatTime(Math.max(0, attempt.remainingSeconds))}</strong>. This attempt has been locked and cannot be edited.`;
+  elCard.innerHTML=`<div class="result"><h2>${resultTitle}</h2><div class="score-big">${attempt.score} / ${total}</div><p>${pct}% correct</p><p class="small">${timeLine}</p><p class="small">Answered questions counted: ${attempt.answeredCount} / ${total}. Completed attempts saved in this browser: <strong>${completed}</strong>.</p><p class="small">This locked attempt will appear on the opening page. It will stay here until you press the return button.</p><p class="small">If there are wrong marks, the opening page can generate an incorrect-question-only practice set from this latest attempt.</p><div class="actions" style="justify-content:center"><button class="btn" onclick="showOpening()">Return to opening page</button></div></div>`;
+}
+bootQuiz();
+</script>
+</body>
+</html>
